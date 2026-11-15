@@ -1,0 +1,6 @@
+id,name,smiles
+1,acrylamide,C=CC(=O)N
+2,N-vinylpyrrolidone,C=CN1CCCC1=O
+3,invalid_example,not-a-smiles
+4,duplicate_acrylamide,C=CC(=O)N
+

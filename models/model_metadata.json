@@ -1,0 +1,42 @@
+{
+  "model_version": "1.0.0",
+  "created": "2026-11-15",
+  "article_doi": "10.1021/acs.jpcb.6c02936",
+  "model_type": "complete sklearn Pipeline: median imputer, standard scaler, GPR",
+  "feature_order": [
+    "mordred_ATS0m",
+    "mordred_ZMIC2",
+    "mordred_ATSC0p",
+    "mordred_ATS2s",
+    "mordred_VR2_D",
+    "mordred_AETA_eta_R",
+    "mordred_ETA_eta_F",
+    "mordred_ATSC0dv"
+  ],
+  "target_definition": "ORCA FINAL SINGLE POINT ENERGY from the vacuum frequency calculation at the optimized geometry; electronic SCF energy without thermal correction",
+  "target_unit": "Eh",
+  "training_data_version": "verified-orca-209-v1",
+  "training_record_count": 209,
+  "source_feature_table_sha256": "b8025c1ea2ab836f9b287b81ea995d0a9caecb39dbc3afb95d9b7975b4ef036f",
+  "model_sha256": "1ee727e346afcd04af8d50314038dd23a37b002d74fd0e072813d38377618983",
+  "software_versions": {
+    "python": "3.13.5",
+    "scikit-learn": "1.6.1"
+  },
+  "validation_metrics": {
+    "n_verified_records": 209,
+    "n_train": 167,
+    "n_test": 42,
+    "random_state": 42,
+    "test_size": 0.2,
+    "cv_folds": 5,
+    "maximum_source_table_vs_orca_delta_Eh": 0.009380976573993394,
+    "train_mae_Eh": 0.1830513496392516,
+    "train_r2": 0.9999984312563084,
+    "test_mae_Eh": 4.512742618706447,
+    "test_r2": 0.9973322475245481,
+    "cv_mae_Eh": 2.7181788520237955,
+    "cv_r2": 0.9977318243022214
+  },
+  "applicability_domain": "Curated closed-shell, polar or charged polymerizable monomers represented by the training descriptor space; exclude metals, radicals, zwitterions, explicit ion pairs, and oligomers without independent validation."
+}

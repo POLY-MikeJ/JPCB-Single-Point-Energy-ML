@@ -1,0 +1,5 @@
+id,name,smiles,canonical_smiles,predicted_E_sp_Eh,predictive_std_Eh,status,error,duplicate_input
+1,acrylamide,C=CC(=O)N,C=CC(N)=O,-244.90620512295402,2.5040043420536153,ok,,False
+2,N-vinylpyrrolidone,C=CN1CCCC1=O,C=CN1CCCC1=O,-364.76659864354133,0.5374729750912091,ok,,False
+3,invalid_example,not-a-smiles,,,,error,RDKit could not parse the SMILES,False
+4,duplicate_acrylamide,C=CC(=O)N,C=CC(N)=O,-244.90620512295402,2.5040043420536153,ok,,True

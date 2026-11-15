@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the article."
+title: "JPCB Single-Point Energy ML"
+version: 1.0.0
+date-released: 2026-11-15
+license: MIT
+repository-code: "https://github.com/POLY-MikeJ/JPCB-Single-Point-Energy-ML"
+authors:
+  - family-names: Zhu
+    given-names: Jie
+preferred-citation:
+  type: article
+  title: "High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning"
+  authors:
+    - family-names: Zhu
+      given-names: Jie
+    - family-names: Zhou
+      given-names: Jing
+    - family-names: Sun
+      given-names: Zhaoyan
+    - family-names: Huang
+      given-names: Xiayun
+    - family-names: Nie
+      given-names: Zhihong
+  journal: "The Journal of Physical Chemistry B"
+  year: 2026
+  doi: 10.1021/acs.jpcb.6c02936
+

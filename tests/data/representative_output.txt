@@ -1,0 +1,10 @@
+Program Version 6.1.1
+! B3LYP 6-311++G(d,p) Freq TightSCF
+FINAL SINGLE POINT ENERGY      -100.123456789000
+Zero point energy                ...      0.05000000 Eh     31.38 kcal/mol
+Total thermal energy                   -100.06000000 Eh
+Total Enthalpy                         -100.05900000 Eh
+Final Gibbs free energy         ...   -100.08000000 Eh
+  0:       -12.50 cm**-1
+  1:        25.00 cm**-1
+                             ****ORCA TERMINATED NORMALLY****
