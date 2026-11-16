@@ -36,7 +36,8 @@ def test_reference_model_actual_prediction_is_stable():
     entry = discover_models(ROOT)["v1.0.0-vacuum-reference"]
     result = predict_with_bundle("C=CC(=O)N", entry)
     assert result["canonical_smiles"] == "C=CC(N)=O"
-    assert result["prediction"] == pytest.approx(-244.90620512295402, abs=1e-9)
+    # BLAS/scikit-learn builds differ at about 1e-9 Eh on Windows runners.
+    assert result["prediction"] == pytest.approx(-244.90620512295402, abs=1e-8)
 
 
 def test_app_invalidates_stale_prediction_after_smiles_change():
