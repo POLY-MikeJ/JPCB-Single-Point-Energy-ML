@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jpcb-single-point-energy-ml"
-version = "1.1.0"
-description = "Local multi-solvent energy prediction and ORCA analysis workbench for polymer monomers"
+version = "1.2.0"
+description = "Local molecular energy, visualization, geometry optimization and ORCA quality-control workbench"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
 license = {text = "MIT"}

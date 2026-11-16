@@ -13,4 +13,8 @@ validation_results/
 private_data/
 internal_review/
 user_models/
+local_jobs/
+data_qc/
+launcher.log
+local_tools/
 

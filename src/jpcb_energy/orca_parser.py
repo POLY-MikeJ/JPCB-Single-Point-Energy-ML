@@ -13,7 +13,7 @@ ENTHALPY = re.compile(r"Total Enthalpy\s+(?:\.\.\.\s+)?(-?\d+\.\d+)\s+Eh", re.I)
 GIBBS = re.compile(r"Final Gibbs free energy\s+\.\.\.\s+(-?\d+\.\d+)\s+Eh", re.I)
 FREQUENCY = re.compile(r"^\s*\d+:\s+(-?\d+\.\d+)\s+cm\*\*-1", re.M)
 EPSILON = re.compile(r"^\s*Epsilon\s+\.\.\.\s+([0-9]+(?:\.[0-9]+)?)\s*$", re.M | re.I)
-XYZ_HEADER = re.compile(r"^\s*\*\s*xyz(?:file)?\s+(-?\d+)\s+(\d+)", re.M | re.I)
+XYZ_HEADER = re.compile(r"^\s*(?:\|\s*\d+>\s*)?\*\s*xyz(?:file)?\s+(-?\d+)\s+(\d+)", re.M | re.I)
 INPUT_LINE = re.compile(r"^\s*(?:\|\s*\d+>\s*)?!\s+(.+)$", re.M)
 
 
@@ -54,6 +54,8 @@ def parse_orca(path: str | Path) -> dict:
         "multiplicity": int(xyz[-1][1]) if xyz else None,
         "keywords": keywords,
         "normal_termination": "ORCA TERMINATED NORMALLY" in text,
+        "scf_converged": "SCF CONVERGED" in text.upper() or "ORCA TERMINATED NORMALLY" in text,
+        "optimization_converged": "THE OPTIMIZATION HAS CONVERGED" in text.upper() if task == "optimization" else None,
         "final_single_point_energy_Eh": energies[-1] if energies else None,
         "energy_occurrence_count": len(energies),
         "zero_point_energy_Eh": _last(ZPE, text),

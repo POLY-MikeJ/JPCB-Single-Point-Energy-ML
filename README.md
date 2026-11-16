@@ -1,6 +1,6 @@
-# JPCB Energy Workbench
+# JPCB Molecular Energy Workbench
 
-Windows-ready, local molecular energy prediction and ORCA analysis software for polar and charged polymer monomers. Version 1.1 extends the published-reference workflow while preserving the exact v1.0.0 vacuum model.
+Windows-ready, local molecular energy, visualization, geometry optimization, and ORCA quality-control software for polar and charged polymer monomers. Version 1.2 adds desktop launch, richer molecular viewers, an optional GFN2-xTB adapter, and reproducible DFT database auditing while preserving the exact v1.0.0 vacuum model.
 
 > Jie Zhu, Jing Zhou, Zhaoyan Sun, Xiayun Huang, and Zhihong Nie, “High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning,” *The Journal of Physical Chemistry B* (2026). [Article DOI](https://doi.org/10.1021/acs.jpcb.6c02936) · [Supporting Information DOI](https://doi.org/10.1021/acs.jpcb.6c02936.s001)
 
@@ -11,7 +11,9 @@ The official models use Mordred descriptors `ATS0m`, `ZMIC2`, `ATSC0p`, `ATS2s`,
 - single-molecule and high-throughput prediction;
 - vacuum, ethanol, DMSO, water, and formamide models;
 - descriptor-range and nearest-neighbor applicability diagnostics;
-- 2D structure export and seeded illustrative 3D conformers;
+- configurable 2D SVG/PNG rendering and seeded multi-conformer 3D exploration;
+- optional, separately labeled local GFN2-xTB geometry optimization;
+- reproducible, non-destructive DFT database quality control;
 - model-input and exploratory descriptor tables;
 - recursive, read-only ORCA output indexing;
 - isolated group-aware user-model training.
@@ -27,9 +29,19 @@ The enhanced comparison uses 207 protocol-consistent molecules in every environm
 
 ## Windows installation and GUI
 
-Install 64-bit Python 3.10-3.13 from [python.org](https://www.python.org/downloads/windows/) and select **Add Python to PATH**. Double-click `install_windows.bat`, then `run_windows.bat`. No Anaconda installation or GPU is required.
+For the existing validated installation, double-click `Launch_JPCB_Workbench.bat`; it invokes the project `.venv` directly and does not rely on `python` or `py` on PATH. To create a per-user desktop shortcut named **JPCB Molecular Energy Workbench**, double-click `Install_Desktop_Shortcut.bat`. `Stop_JPCB_Workbench.bat` stops only the server PID recorded by this launcher.
 
-The desktop-style interface has seven workspaces: Predict, Batch Screening, Molecular Explorer, Solvent Comparison, ORCA Workbench, Model Training, and Model & Documentation.
+For a clean installation, install 64-bit Python 3.10-3.13, double-click `install_windows.bat`, then use the launcher. The server binds to `127.0.0.1`, disables usage telemetry, reuses a healthy launcher-owned instance, and chooses a free local port if 8501 is occupied.
+
+The interface has eight workspaces: Predict, Batch Screening, Molecular Explorer, Solvent Comparison, ORCA Workbench, Model Training, local-owner Data Quality, and Help / About.
+
+## Visualization, xTB, and DFT QC
+
+The Molecular Explorer supports drawing styles, atom indices/maps, charges, hydrogens, stereo wedges, SMARTS highlighting, dimensions, rotation, backgrounds, and high-resolution export. Its interactive offline 3D viewer provides representation, colors, labels, hydrogen, background, radius, bond, spin, camera, RMSD, and export controls. Display settings never modify molecular identity.
+
+GFN2-xTB is **not bundled or installed automatically**. If an existing native Windows `xtb.exe` is configured, the workbench verifies it and runs `--gfn 2 --opt tight` with explicit charge and unpaired-electron arguments in an isolated `local_jobs/xtb` directory. xTB/ALPB results remain distinct from ORCA CPCM reference calculations and GPR predictions. RDKit MMFF/UFF optimization remains available when xTB is absent.
+
+`scripts/run_dft_qc.py` audits supplied ORCA files read-only. It checks identity, composition, charge/multiplicity, task, method/basis, solvent protocol, pairing, convergence evidence, frequencies, geometry contacts, and group-fold composition-aware residuals. Statistical extremes are review signals only. Raw and published-reference records are never edited or removed; reversible `original_published` and `verified_strict` views remain separate. Detailed record-level results are local/internal and ignored by Git.
 
 For offline deployment, run `prepare_offline_windows.ps1` on a connected Windows computer with the target Python version, copy the repository plus generated `wheelhouse`, and run `install_windows_offline.bat` on the offline computer.
 
@@ -55,7 +67,7 @@ The Molecular Explorer's 3D geometry is generated with seeded RDKit ETKDGv3 and 
 
 ## Reproducibility and tests
 
-See [Reproducibility](docs/REPRODUCIBILITY.md), [Model card](docs/MODEL_CARD.md), [Data dictionary](docs/DATA_DICTIONARY.md), [Workbench guide](docs/WORKBENCH_V1.1.md), and [Windows guide](docs/INSTALL_WINDOWS.md).
+See [Reproducibility](docs/REPRODUCIBILITY.md), [Model card](docs/MODEL_CARD.md), [Data dictionary](docs/DATA_DICTIONARY.md), [v1.2 workbench guide](docs/WORKBENCH_V1.2.md), and [Windows guide](docs/INSTALL_WINDOWS.md).
 
 ```bat
 .venv\Scripts\python.exe -m pytest -q
