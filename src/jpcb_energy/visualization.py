@@ -20,6 +20,8 @@ class DrawSettings:
     show_hydrogens: bool = False
     stereo: bool = True
     highlight_charges: bool = True
+    highlight_heteroatoms: bool = False
+    highlight_aromatic: bool = False
     smarts: str = ""
     selected_atoms: tuple[int, ...] = ()
     background: str = "white"
@@ -68,6 +70,10 @@ def _highlights(mol: Chem.Mol, settings: DrawSettings) -> tuple[list[int], dict[
     atoms = set(settings.selected_atoms)
     if settings.highlight_charges:
         atoms.update(atom.GetIdx() for atom in mol.GetAtoms() if atom.GetFormalCharge())
+    if settings.highlight_heteroatoms:
+        atoms.update(atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in {1, 6})
+    if settings.highlight_aromatic:
+        atoms.update(atom.GetIdx() for atom in mol.GetAtoms() if atom.GetIsAromatic())
     if settings.smarts.strip():
         query = Chem.MolFromSmarts(settings.smarts.strip())
         if query is None:
@@ -77,14 +83,14 @@ def _highlights(mol: Chem.Mol, settings: DrawSettings) -> tuple[list[int], dict[
     colors = {}
     for idx in atoms:
         charge = mol.GetAtomWithIdx(idx).GetFormalCharge()
-        colors[idx] = (0.95, 0.36, 0.31) if charge < 0 else (0.0, 0.65, 0.8) if charge > 0 else (1.0, 0.64, 0.2)
+        colors[idx] = (0.95, 0.36, 0.31) if charge < 0 else (0.0, 0.65, 0.8) if charge > 0 else (0.55, 0.35, 0.9) if mol.GetAtomWithIdx(idx).GetIsAromatic() else (1.0, 0.64, 0.2)
     return sorted(atoms), colors
 
 
 def _options(drawer, settings: DrawSettings, scale: int = 1):
     options = drawer.drawOptions(); options.addAtomIndices = settings.atom_indices
     options.bondLineWidth = settings.line_width * scale; options.baseFontSize = 0.6 * settings.font_scale; options.padding = settings.padding
-    options.useBWAtomPalette = settings.style in {"skeleton", "monochrome"}; options.singleColourWedgeBonds = settings.style == "monochrome"
+    options.useBWAtomPalette = settings.style in {"standard 2D skeletal formula", "clean publication-style", "monochrome", "skeleton"}; options.singleColourWedgeBonds = settings.style in {"monochrome", "clean publication-style"}
     options.clearBackground = settings.background != "transparent"
     options.setBackgroundColour((1, 1, 1, 1) if settings.background == "white" else (0.04, 0.09, 0.16, 1) if settings.background == "dark" else (1, 1, 1, 0))
 

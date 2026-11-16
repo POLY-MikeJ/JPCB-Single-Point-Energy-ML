@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use the pretrained prediction method or models, cite the JPCB article below and the software."
 title: "ZHU MolEnergy Workbench: Molecular Energy Prediction, Visualization & Computational Chemistry"
-version: 1.2.1
+version: 1.3.0
 date-released: 2026-11-16
 license: MIT
 repository-code: "https://github.com/POLY-MikeJ/ZHU-MolEnergy"
@@ -25,6 +25,10 @@ preferred-citation:
       given-names: Zhihong
   journal: "The Journal of Physical Chemistry B"
   year: 2026
+  volume: 130
+  issue: 22
+  start: 5819
+  end: 5828
   doi: 10.1021/acs.jpcb.6c02936
   url: "https://doi.org/10.1021/acs.jpcb.6c02936"
 

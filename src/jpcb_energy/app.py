@@ -1,4 +1,4 @@
-"""ZHU MolEnergy Workbench v1.2.1 local Streamlit application."""
+"""ZHU MolEnergy Workbench v1.3.0 local Streamlit application."""
 
 from __future__ import annotations
 
@@ -13,10 +13,11 @@ import streamlit as st
 import streamlit.components.v1 as components
 from rdkit import Chem
 
-from jpcb_energy.conformer import conformer_png_bytes, conformer_rmsd, conformer_sdf, conformer_xyz, generate_conformers, plotly_figure
+from jpcb_energy.conformer import conformer_mol, conformer_png_bytes, conformer_rmsd, conformer_sdf, conformer_xyz, generate_conformers, plotly_figure
+from jpcb_energy.data_cleaning import CleaningConfig, apply_removal, cleaning_report, compare_composition_models, detect_outliers
 from jpcb_energy.descriptors import calculate_descriptors, calculate_rdkit_panel
 from jpcb_energy.orca_parser import index_orca_folder
-from jpcb_energy.provenance import ACS_CITATION, ARTICLE_DOI, ARTICLE_TITLE, ARTICLE_URL, PRODUCT_NAME, PRODUCT_SUBTITLE, SI_URL, SOFTWARE_VERSION, add_prediction_metadata, prediction_workbook
+from jpcb_energy.provenance import ACS_CITATION, ARTICLE_AUTHORS, ARTICLE_DOI, ARTICLE_ISSUE, ARTICLE_PAGES, ARTICLE_TITLE, ARTICLE_URL, ARTICLE_VOLUME, BIBTEX_CITATION, PRODUCT_NAME, PRODUCT_SUBTITLE, SI_DOI, SI_URL, SOFTWARE_VERSION, add_prediction_metadata, prediction_workbook
 from jpcb_energy.registry import discover_models
 from jpcb_energy.user_training import train_user_model
 from jpcb_energy.visualization import DrawSettings, molecule_png_bytes, molecule_properties, molecule_svg
@@ -27,7 +28,9 @@ from jpcb_energy.xtb import SUPPORTED_ALPB, detect_xtb, rdkit_optimize, run_xtb
 ROOT = Path(__file__).resolve().parents[2]
 USER_WORKSPACE = ROOT / "user_models"
 XTB_JOBS = ROOT / "local_jobs" / "xtb"
+CLEANING_JOBS = ROOT / "local_jobs" / "data_cleaning"
 QC_ROOT = ROOT / "data_qc"
+MASCOT_PATH = ROOT / "assets" / "zhu_molenergy_scientist.png"
 EH_TO_EV = 27.211386245988
 
 st.set_page_config(page_title=PRODUCT_NAME, page_icon="⚛", layout="wide", initial_sidebar_state="expanded")
@@ -41,6 +44,7 @@ st.markdown("""<style>
 .scientific-note{border-left:4px solid var(--cyan);background:#E8F7FA;padding:.85rem 1rem;border-radius:0 9px 9px 0;color:#16324A;margin:.6rem 0}
 .coral-note{border-left-color:var(--coral);background:#FFF2EF}.chip{display:inline-block;padding:.18rem .55rem;margin:.1rem;border-radius:999px;background:#DDF3F7;color:#075B6A;font-size:.78rem;font-weight:650}.paper-source{font-size:.84rem;color:#38556B}
 .section-kicker{color:#087E94;text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;font-weight:800;margin-bottom:.2rem}
+.hero{background:linear-gradient(120deg,#061827,#0B3D55);border-radius:18px;padding:1.4rem 1.6rem;color:#EAF9FC;box-shadow:0 12px 32px rgba(6,24,39,.14)}.hero h2{color:white;margin:.1rem 0}.hero p{color:#CFEAF1;margin:.25rem 0}.citation-card{background:#fff;border:1px solid #CFE2EA;border-radius:12px;padding:1rem 1.1rem}
 .model-id{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;background:#EAF1F5;padding:.25rem .45rem;border-radius:5px;color:#102A43}
 [data-testid="stWidgetLabel"],[data-testid="stWidgetLabel"] p,[role="tab"],.stTabs button,.stSelectbox label,.stSlider label,.stTextInput label{color:#102A43!important;opacity:1!important;font-weight:600}
 [data-baseweb="select"]>div,[data-baseweb="input"]>div,input,textarea{background:#FFFFFF!important;color:#102A43!important;border-color:#9FB7C6!important}
@@ -52,6 +56,13 @@ st.markdown("""<style>
 @st.cache_resource
 def model_registry():
     return discover_models(ROOT)
+
+
+@st.cache_data(show_spinner=False)
+def cleaning_detection(path: str, mtime: float, config_values: tuple[float, ...]) -> pd.DataFrame:
+    del mtime
+    config=CleaningConfig(*config_values)
+    return detect_outliers(pd.read_csv(path),config)
 
 
 def model_picker(label: str = "Official model", key: str = "official_model"):
@@ -81,6 +92,7 @@ def render_3d_html(molecule, **settings):
     viewer_id=f"zhu_molenergy_3d_{uuid4().hex}"; html=pio.to_html(figure,include_plotlyjs=True,full_html=False,div_id=viewer_id,config={"displaylogo":False,"responsive":True,"scrollZoom":True,"modeBarButtonsToAdd":["resetCameraDefault3d","resetCameraLastSave3d"],"toImageButtonOptions":{"format":"png","filename":"zhu_molenergy_conformer","scale":2}})
     if auto_spin:
         html += f"""<script>(function(){{const gd=document.getElementById('{viewer_id}');let a=0;const timer=setInterval(function(){{if(!document.body.contains(gd)){{clearInterval(timer);return}}a+=0.018;Plotly.relayout(gd,{{'scene.camera.center':{{x:0,y:0,z:0}},'scene.camera.eye':{{x:1.8*Math.cos(a),y:1.8*Math.sin(a),z:1.05}}}})}},60);window.addEventListener('beforeunload',()=>clearInterval(timer),{{once:true}});}})();</script>"""
+    if settings.get("background")=="gradient": html=f"<div style='border-radius:12px;background:linear-gradient(145deg,#F8FAFC,#CFFAFE);overflow:hidden'>{html}</div>"
     components.html(html,height=590,scrolling=False)
 
 
@@ -90,20 +102,27 @@ def prediction_downloads(frame: pd.DataFrame, model_id: str, metadata: dict, ste
     second.download_button("Download Excel with provenance",prediction_workbook(frame,model_id,metadata),f"{stem}.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",use_container_width=True)
 
 
+def copy_button(label: str, value: str, key: str) -> None:
+    payload=json.dumps(value)
+    components.html(f"""<button id="{key}" style="width:100%;padding:11px 16px;border:0;border-radius:8px;background:#007F95;color:white;font:600 15px sans-serif;cursor:pointer">{label}</button><div id="{key}_status" style="margin-top:7px;color:#38556B;font:13px sans-serif" aria-live="polite"></div><script>const b=document.getElementById('{key}'),s=document.getElementById('{key}_status'),t={payload};b.onclick=async()=>{{try{{await navigator.clipboard.writeText(t)}}catch(e){{const x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();document.execCommand('copy');x.remove()}}s.textContent='{label.replace('Copy','Copied')}.'}};</script>""",height=78)
+
+
 def citation_copy_button() -> None:
-    payload=json.dumps(ACS_CITATION)
-    components.html(f"""<button id="cite" style="width:100%;padding:11px 16px;border:0;border-radius:8px;background:#007F95;color:white;font:600 15px sans-serif;cursor:pointer">Cite This Work</button><div id="status" style="margin-top:7px;color:#38556B;font:13px sans-serif" aria-live="polite"></div><script>const b=document.getElementById('cite'),s=document.getElementById('status'),t={payload};b.onclick=async()=>{{try{{await navigator.clipboard.writeText(t);s.textContent='ACS citation copied to clipboard.'}}catch(e){{const x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();document.execCommand('copy');x.remove();s.textContent='ACS citation copied to clipboard.'}}}};</script>""",height=78)
+    copy_button("Cite This Work", ACS_CITATION, "cite_work")
 
 
-st.sidebar.markdown("## ⚛ ZHU MolEnergy"); st.sidebar.caption(PRODUCT_SUBTITLE); st.sidebar.markdown("<div class='paper-source'>Based on research published in <i>The Journal of Physical Chemistry B</i> (2026).</div>",unsafe_allow_html=True)
-pages=["Predict","Batch Screening","Molecular Explorer","Solvent Comparison","ORCA Workbench","Model Training","Data Quality","About & Citation"]
+st.sidebar.markdown("## ⚛ ZHU MolEnergy"); st.sidebar.caption(PRODUCT_SUBTITLE); st.sidebar.markdown(f"<div class='paper-source'><b>Zhu et al.</b> <i>J. Phys. Chem. B</i> <b>2026</b>, <b>{ARTICLE_VOLUME}</b> ({ARTICLE_ISSUE}), {ARTICLE_PAGES}.<br><a href='{ARTICLE_URL}' target='_blank'>DOI: {ARTICLE_DOI}</a></div>",unsafe_allow_html=True)
+pages=["Predict","Batch Screening","Molecular Explorer","Solvent Comparison","ORCA Workbench","Model Training","Data Quality","Data Cleaning & Outlier Removal","About & Citation"]
 requested_page=st.query_params.get("page","Predict"); requested_page=requested_page if requested_page in pages else "Predict"
 page=st.sidebar.radio("Workspace",pages,index=pages.index(requested_page)); st.sidebar.markdown("---")
 with st.sidebar: citation_copy_button()
 st.sidebar.caption("Localhost only · source data are never modified")
-st.markdown(f"<div class='section-kicker'>{PRODUCT_NAME}</div>",unsafe_allow_html=True); st.title(page); st.caption(f"{PRODUCT_SUBTITLE} · Based on the research published in The Journal of Physical Chemistry B (2026).")
+st.markdown(f"<div class='section-kicker'>{PRODUCT_NAME}</div>",unsafe_allow_html=True); st.title(page); st.caption(f"{PRODUCT_SUBTITLE} · Zhu et al., J. Phys. Chem. B 2026, {ARTICLE_VOLUME} ({ARTICLE_ISSUE}), {ARTICLE_PAGES}.")
 
 if page == "Predict":
+    hero_text=f"<div class='hero'><h2>Prediction with traceable scientific provenance</h2><p>Published descriptor-engineered models, interactive chemistry tools, and local-first workflows.</p><p>Zhu et al. <i>J. Phys. Chem. B</i> <b>2026</b>, <b>{ARTICLE_VOLUME}</b> ({ARTICLE_ISSUE}), {ARTICLE_PAGES}.</p></div>"
+    hero_left,hero_right=st.columns([0.78,0.22],vertical_alignment="center"); hero_left.markdown(hero_text,unsafe_allow_html=True)
+    if MASCOT_PATH.is_file(): hero_right.image(str(MASCOT_PATH),use_container_width=True)
     model_id,entry=model_picker(); model_summary(model_id,entry); smiles=st.text_input("SMILES","C=CC(=O)N",key="predict_smiles")
     current_signature=(model_id,smiles.strip())
     if st.button("Predict electronic energy",type="primary",key="predict_button"):
@@ -144,9 +163,9 @@ elif page == "Molecular Explorer":
     with tabs[0]:
         control,viewer=st.columns([0.36,0.64],gap="large")
         with control:
-            style=st.selectbox("Drawing style",["heteroatom","skeleton","monochrome"]); overlay=st.multiselect("Overlays",["Atom indices","Atom maps","Formal charges"],default=["Formal charges"]); hydrogens=st.toggle("Show explicit hydrogens"); stereo=st.toggle("Stereo wedges",value=True); background=st.selectbox("Background",["white","transparent","dark"]); smarts=st.text_input("SMARTS highlight (optional)"); rotation=st.slider("2D rotation",-180,180,0,5); line_width=st.slider("Bond line width",1.0,5.0,2.0,.25); font_scale=st.slider("Atom/bond font scale",.6,1.8,1.0,.1); width=st.number_input("Canvas width",400,1600,720,40); height=st.number_input("Canvas height",300,1200,460,40); resolution=st.select_slider("PNG resolution",options=[1,2,3,4],value=2,format_func=lambda value:f"{value}×")
+            style=st.selectbox("Structure expression",["standard 2D skeletal formula","atom-index annotated 2D","charge-highlighted 2D","heteroatom emphasis","aromatic ring emphasis","clean publication-style"]); overlay=st.multiselect("Additional overlays",["Atom indices","Atom maps","Formal charges"],default=[]); hydrogens=st.toggle("Show explicit hydrogens"); stereo=st.toggle("Stereo wedges",value=True); background=st.selectbox("Background",["white","transparent","dark"]); smarts=st.text_input("SMARTS highlight (optional)"); rotation=st.slider("2D rotation",-180,180,0,5); line_width=st.slider("Bond line width",1.0,5.0,2.0,.25); font_scale=st.slider("Atom/bond font scale",.6,1.8,1.0,.1); width=st.number_input("Canvas width",400,1600,720,40); height=st.number_input("Canvas height",300,1200,460,40); resolution=st.select_slider("PNG resolution",options=[1,2,3,4],value=2,format_func=lambda value:f"{value}×")
         if properties:
-            settings=DrawSettings(style=style,atom_indices="Atom indices" in overlay,atom_maps="Atom maps" in overlay,show_hydrogens=hydrogens,stereo=stereo,highlight_charges="Formal charges" in overlay,smarts=smarts,background=background,width=int(width),height=int(height),line_width=line_width,font_scale=font_scale,rotation=rotation)
+            settings=DrawSettings(style=style,atom_indices="Atom indices" in overlay or style=="atom-index annotated 2D",atom_maps="Atom maps" in overlay,show_hydrogens=hydrogens,stereo=stereo,highlight_charges="Formal charges" in overlay or style=="charge-highlighted 2D",highlight_heteroatoms=style=="heteroatom emphasis",highlight_aromatic=style=="aromatic ring emphasis",smarts=smarts,background=background,width=int(width),height=int(height),line_width=2.6 if style=="clean publication-style" else line_width,font_scale=font_scale,rotation=rotation)
             try:
                 svg=molecule_svg(smiles,settings); png=molecule_png_bytes(smiles,settings=settings,scale=resolution)
                 with viewer: st.image(svg,use_container_width=True); st.code(properties["isomeric_smiles"],language=None); first,second=st.columns(2); first.download_button("Export SVG",svg,"molecule.svg","image/svg+xml",use_container_width=True); second.download_button("Export PNG",png,"molecule.png","image/png",use_container_width=True)
@@ -154,7 +173,7 @@ elif page == "Molecular Explorer":
     with tabs[1]:
         controls,display=st.columns([0.34,0.66],gap="large")
         with controls:
-            seed=st.number_input("ETKDG seed",0,2147483647,42,1); count=st.slider("Conformer count",1,12,3); force_field=st.selectbox("Force field",["MMFF94","MMFF94s","UFF"]); style3d=st.selectbox("Representation",["ball-and-stick","stick","sphere","wireframe"]); color3d=st.selectbox("Atom colors",["CPK","monochrome"]); background3d=st.selectbox("3D background",["light","dark","transparent"]); show_h3d=st.toggle("Show H in 3D",value=True); labels=st.selectbox("Atom labels",["none","element","index"]); atom_scale=st.slider("Atom radius",.5,2.0,1.0,.1); bond_width=st.slider("Bond thickness",1.0,12.0,5.0,.5); auto_spin=st.toggle("Auto-spin")
+            seed=st.number_input("ETKDG seed",0,2147483647,42,1); count=st.slider("Conformer count",1,20,5); force_field=st.selectbox("RDKit quick optimizer",["MMFF94","MMFF94s","UFF"]); style3d=st.selectbox("Representation",["ball-and-stick","stick","sphere / space-filling","wireframe","cartoon-like","licorice / tube"]); color3d=st.selectbox("Atom colors",["CPK","element pastel","formal charge","monochrome"]); background3d=st.selectbox("3D background",["light","dark","gradient","transparent"]); show_h3d=st.toggle("Show H in 3D",value=True); labels=st.selectbox("Atom labels",["none","element","index","element + index","formal charge"]); atom_scale=st.slider("Atom / sphere size",.5,2.2,1.0,.1); bond_width=st.slider("Bond / tube radius",1.0,14.0,5.0,.5); auto_spin=st.toggle("Rotation animation",help="Animation is presentation-only and does not change coordinates.")
             if st.button("Generate conformers",type="primary"):
                 try:
                     with st.spinner("Embedding and force-field optimizing conformers…"): st.session_state["conformer_mols"],st.session_state["conformer_info"]=generate_conformers(smiles,int(seed),int(count),force_field); st.session_state["conformer_smiles"]=smiles.strip()
@@ -163,10 +182,12 @@ elif page == "Molecular Explorer":
         if molecules:
             infos=st.session_state["conformer_info"]
             with display:
-                selected=st.selectbox("Conformer",range(len(molecules)),format_func=lambda idx:f"#{idx+1} · {infos[idx]['force_field_energy']:.4f} kcal/mol" if infos[idx]["force_field_energy"] is not None else f"#{idx+1}")
+                st.success("Conformers are ranked by RDKit force-field energy; conformer #1 is the lowest-energy RDKit conformer.")
+                selected=st.selectbox("Conformer ID",range(len(molecules)),format_func=lambda idx:f"#{infos[idx]['conformer']} (rank {idx+1}) · {infos[idx]['force_field_energy']:.4f} kcal/mol" if infos[idx]["force_field_energy"] is not None else f"#{infos[idx]['conformer']} (rank {idx+1})")
                 render_3d_html(molecules[selected],style=style3d,color_scheme=color3d,background=background3d,show_hydrogens=show_h3d,labels=labels,atom_scale=atom_scale,bond_width=bond_width,auto_spin=auto_spin)
                 rmsd=0.0 if selected==0 else conformer_rmsd(molecules[0],molecules[selected]); st.caption(f"Geometry source: {infos[selected]['geometry_source']} · RMSD to ranked conformer #1: {rmsd:.4f} Å")
-                one,two,three=st.columns(3); one.download_button("SDF",conformer_sdf(molecules[selected]),"conformer.sdf","chemical/x-mdl-sdfile"); two.download_button("XYZ",conformer_xyz(molecules[selected]),"conformer.xyz","chemical/x-xyz"); three.download_button("PNG view",conformer_png_bytes(molecules[selected]),"conformer_3d.png","image/png")
+                st.caption("Drag to rotate · wheel/pinch to zoom · double-click or use the camera reset control to auto-center and fit.")
+                one,two,three,four=st.columns(4); one.download_button("SDF",conformer_sdf(molecules[selected]),"conformer.sdf","chemical/x-mdl-sdfile"); two.download_button("XYZ",conformer_xyz(molecules[selected]),"conformer.xyz","chemical/x-xyz"); three.download_button("MOL",conformer_mol(molecules[selected]),"conformer.mol","chemical/x-mdl-molfile"); four.download_button("PNG view",conformer_png_bytes(molecules[selected]),"conformer_3d.png","image/png")
                 st.warning(infos[selected]["geometry_role"])
         else: display.info("Choose reproducible embedding settings and generate one or more conformers.")
     with tabs[2]:
@@ -249,9 +270,58 @@ elif page == "Data Quality":
         plot=frame.dropna(subset=["composition_oof_residual_Eh"]); st.plotly_chart(px.scatter(plot,x="atom_count",y="composition_oof_residual_Eh",color="qc_status",facet_col="environment",facet_col_wrap=3,hover_name="record_id",labels={"atom_count":"Atoms including H","composition_oof_residual_Eh":"OOF composition residual (Eh)"}),use_container_width=True); st.caption("Residuals are out-of-fold estimates from element counts and formal charge. A large value is a review signal, not proof of an erroneous calculation.")
         st.download_button("Export sanitized QC summary",json.dumps(summary,indent=2),"sanitized_qc_summary.json","application/json")
 
+elif page == "Data Cleaning & Outlier Removal":
+    st.warning("This module excludes records only from a reversible working copy. It never deletes source rows, edits ORCA files, or overwrites published models.")
+    audit_path=QC_ROOT/"full_record_audit.csv"
+    if not audit_path.is_file(): st.info("Run scripts/run_dft_qc.py first to build the read-only audit.")
+    else:
+        with st.expander("Detection thresholds",expanded=False):
+            a,b,c=st.columns(3); iqr=a.number_input("IQR multiplier",1.0,5.0,1.5,.1); z=b.number_input("Z-score threshold",2.0,8.0,3.0,.1); mad=c.number_input("Modified Z-score (MAD)",2.0,8.0,3.5,.1)
+            d,e=st.columns(2); contamination=d.slider("Isolation Forest expected fraction",.005,.10,.02,.005); composition=e.number_input("Composition-adjusted residual threshold",2.0,8.0,3.5,.1)
+        config=CleaningConfig(iqr,z,mad,contamination,composition); detected=cleaning_detection(str(audit_path),audit_path.stat().st_mtime,(iqr,z,mad,contamination,composition))
+        removed=set(st.session_state.get("cleaning_removed_keys",[])); history=list(st.session_state.get("cleaning_history",[])); cleaned,excluded=apply_removal(detected,removed)
+        metrics=st.columns(5); metrics[0].metric("Original",len(detected)); metrics[1].metric("Clearly invalid",int(detected.clearly_invalid.sum())); metrics[2].metric("Statistical suspects",int(detected.statistical_suspect.sum())); metrics[3].metric("Working copy",len(cleaned)); metrics[4].metric("Excluded",len(excluded))
+        st.markdown("**A. Clearly invalid** uses ORCA termination/convergence, charge, composition, protocol, substantive-frequency and inconsistent-duplicate evidence. **B. Statistical suspects** remain included until the user chooses to remove them.")
+        candidate=detected[detected.clearly_invalid|detected.statistical_suspect]
+        categories=st.multiselect("Filter anomaly category",["A: clearly invalid","B: statistical suspect"],default=["A: clearly invalid","B: statistical suspect"]); reasons=sorted({reason for value in candidate.outlier_reasons for reason in str(value).split(";") if reason}); reason_filter=st.multiselect("Filter detection reasons",reasons)
+        filtered=candidate[candidate.outlier_category.isin(categories)];
+        if reason_filter: filtered=filtered[filtered.outlier_reasons.map(lambda value:any(reason in str(value).split(";") for reason in reason_filter))]
+        selected=st.multiselect("Select records for removal",filtered.record_key.astype(str).tolist(),format_func=lambda key:f"{key} · {filtered.set_index('record_key').loc[key,'outlier_category']}" if key in filtered.set_index('record_key').index else key)
+        buttons=st.columns(6)
+        def update_removed(new_keys: set[str]):
+            st.session_state["cleaning_history"]=history+[sorted(removed)]; st.session_state["cleaning_removed_keys"]=sorted(new_keys)
+        if buttons[0].button("Remove Extreme Values",use_container_width=True): update_removed(removed|set(detected.loc[detected.clearly_invalid,"record_key"].astype(str))); st.rerun()
+        if buttons[1].button("Remove Suspected Outliers",use_container_width=True): update_removed(removed|set(detected.loc[detected.statistical_suspect,"record_key"].astype(str))); st.rerun()
+        if buttons[2].button("Remove selected outliers",use_container_width=True,disabled=not selected): update_removed(removed|set(selected)); st.rerun()
+        if buttons[3].button("Keep all",use_container_width=True): update_removed(set()); st.rerun()
+        if buttons[4].button("Undo",use_container_width=True,disabled=not history): st.session_state["cleaning_removed_keys"]=history[-1]; st.session_state["cleaning_history"]=history[:-1]; st.rerun()
+        if buttons[5].button("Restore Original Dataset",use_container_width=True): st.session_state["cleaning_removed_keys"]=[]; st.session_state["cleaning_history"]=[]; st.rerun()
+        tab1,tab2,tab3,tab4=st.tabs(["Anomaly table","Distributions","Reasons","Model comparison"])
+        with tab1: st.dataframe(filtered[["record_key","record_id","environment","final_single_point_energy_Eh","composition_oof_residual_Eh","qc_status","outlier_category","outlier_reasons"]],use_container_width=True,height=480)
+        with tab2:
+            left,right=st.columns(2); left.plotly_chart(px.box(detected,x="environment",y="final_single_point_energy_Eh",color="outlier_category",points="suspectedoutliers",title="Energy boxplots"),use_container_width=True); right.plotly_chart(px.histogram(detected,x="composition_oof_residual_Eh",color="outlier_category",nbins=70,title="Composition-adjusted residual distribution"),use_container_width=True)
+            st.plotly_chart(px.scatter(detected,x="atom_count",y="composition_oof_residual_Eh",color="outlier_category",symbol="environment",hover_name="record_id",title="Flagged composition residuals"),use_container_width=True)
+        with tab3:
+            reason_rows=[{"reason":reason,"records":int(detected[reason].sum())} for reason in ["iqr_outlier","zscore_outlier","mad_outlier","isolation_forest_outlier","composition_residual_outlier","orca_qc_invalid","duplicate_inconsistent"]]; st.plotly_chart(px.bar(pd.DataFrame(reason_rows),x="reason",y="records",color="reason",title="Records by anomaly reason"),use_container_width=True)
+        with tab4:
+            st.caption("This is a group-aware Ridge composition baseline for sensitivity analysis, not the published JPCB GPR result.")
+            if st.button("Train on cleaned dataset and compare original vs cleaned models",type="primary"):
+                with st.spinner("Running group-aware diagnostic comparisons…"): st.session_state["cleaning_model_comparison"]=compare_composition_models(detected,removed)
+            if "cleaning_model_comparison" in st.session_state: st.dataframe(st.session_state["cleaning_model_comparison"],use_container_width=True)
+        report=cleaning_report(detected,cleaned,excluded,config,"interactive_working_copy")
+        downloads=st.columns(3); downloads[0].download_button("Download dataset_cleaned_v1.csv",cleaned.to_csv(index=False),"dataset_cleaned_v1.csv","text/csv",use_container_width=True); downloads[1].download_button("Download excluded_records.csv",excluded.to_csv(index=False),"excluded_records.csv","text/csv",use_container_width=True); downloads[2].download_button("Download cleaning_report.json",json.dumps(report,indent=2),"cleaning_report.json","application/json",use_container_width=True)
+        if st.button("Save reversible cleaning bundle locally"):
+            stamp=pd.Timestamp.now().strftime("%Y%m%d_%H%M%S"); destination=CLEANING_JOBS/stamp; destination.mkdir(parents=True,exist_ok=False); cleaned.to_csv(destination/"dataset_cleaned_v1.csv",index=False); excluded.to_csv(destination/"excluded_records.csv",index=False); (destination/"cleaning_report.json").write_text(json.dumps(report,indent=2),encoding="utf-8"); st.success(f"Saved: {destination}")
+        st.info("No performance value shown here replaces or revises the published JPCB model results. Any cleaned-dataset model is a separate user analysis.")
+
 else:
-    st.markdown(f"### {PRODUCT_NAME}"); st.caption(PRODUCT_SUBTITLE); st.markdown("This software is built on the scientific research and pretrained feature-engineered GPR models reported in the JPCB paper below.")
-    st.subheader("Reference & Citation"); st.markdown(f"**{ARTICLE_TITLE}**\n\nJie Zhu, Jing Zhou, Zhaoyan Sun, Xiayun Huang, and Zhihong Nie. *The Journal of Physical Chemistry B* (2026).\n\n[Article DOI: {ARTICLE_DOI}]({ARTICLE_URL}) · [Supporting Information DOI]({SI_URL})"); citation_copy_button(); st.code(ACS_CITATION,language=None)
+    about_left,about_right=st.columns([.76,.24],vertical_alignment="center"); about_left.markdown(f"### {PRODUCT_NAME}"); about_left.caption(PRODUCT_SUBTITLE); about_left.markdown("This software is built on the scientific research and pretrained feature-engineered GPR models reported in the JPCB paper below.")
+    if MASCOT_PATH.is_file(): about_right.image(str(MASCOT_PATH),use_container_width=True)
+    st.subheader("Reference & Citation"); st.markdown(f"<div class='citation-card'><b>{ARTICLE_AUTHORS}.</b><br><b>{ARTICLE_TITLE}.</b><br><i>The Journal of Physical Chemistry B</i> <b>2026</b>, <b>{ARTICLE_VOLUME}</b> ({ARTICLE_ISSUE}), {ARTICLE_PAGES}.<br>DOI: <a href='{ARTICLE_URL}' target='_blank'>{ARTICLE_URL}</a><br>Supporting Information DOI: <a href='{SI_URL}' target='_blank'>{SI_URL}</a></div>",unsafe_allow_html=True)
+    copy_left,copy_right=st.columns(2)
+    with copy_left: copy_button("Copy Citation",ACS_CITATION,"copy_citation")
+    with copy_right: copy_button("Copy BibTeX",BIBTEX_CITATION,"copy_bibtex")
+    st.code(ACS_CITATION,language=None); st.code(BIBTEX_CITATION,language="bibtex")
     st.subheader("Research and model principle"); st.markdown("The published work uses chemically curated charged/polymerizable monomers, Mordred/RDKit molecular descriptors, feature selection, and Gaussian process regression to approximate ORCA-derived molecular electronic energies. The software preserves the released v1.0.0 reference model and v1.1.0 environment-specific bundles.")
     st.warning("Target-definition note: the paper introduction defines E_sp as final SCF electronic energy, whereas one Methods sentence mentions thermal corrections. Inspection of the released training table and ORCA labels shows that the distributed models predict ORCA FINAL SINGLE POINT ENERGY electronic energy. Existing labels were not silently changed.")
     st.subheader("Method boundaries"); st.markdown("- The JPCB paper is the scientific basis for the descriptor-engineered GPR prediction method and pretrained models.\n- RDKit conformers, interactive 3D visualization, GFN2-xTB optimization, workbench UI, and database-QC tooling are later software extensions, not original paper results.\n- xTB energy is never equated with the ORCA DFT target.\n- Absolute electronic energies should only be compared across chemically meaningful systems or a balanced reaction.")

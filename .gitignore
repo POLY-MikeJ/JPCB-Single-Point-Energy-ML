@@ -19,4 +19,5 @@ local_jobs/
 data_qc/
 launcher.log
 local_tools/
+review_artifacts/
 

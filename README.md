@@ -2,15 +2,15 @@
 
 *Molecular Energy Prediction, Visualization & Computational Chemistry*
 
-Windows-ready local software for molecular-energy prediction, molecular visualization, geometry optimization, ORCA analysis, and traceable DFT quality control. Version 1.2.1 adopts the ZHU MolEnergy identity while preserving every v1.0.0/v1.1.0 model identifier and artifact.
+Windows-ready local software for molecular-energy prediction, molecular visualization, geometry optimization, ORCA analysis, and traceable DFT quality control. Version 1.3.0 extends the workbench while preserving every v1.0.0/v1.1.0 model identifier and artifact.
 
-> Jie Zhu, Jing Zhou, Zhaoyan Sun, Xiayun Huang, and Zhihong Nie, “High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning,” *The Journal of Physical Chemistry B* (2026). [Article DOI](https://doi.org/10.1021/acs.jpcb.6c02936) · [Supporting Information DOI](https://doi.org/10.1021/acs.jpcb.6c02936.s001)
+> Jie Zhu, Jing Zhou, Zhaoyan Sun, Xiayun Huang, and Zhihong Nie. **High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning.** *The Journal of Physical Chemistry B* **2026**, **130** (22), 5819–5828. [Article DOI](https://doi.org/10.1021/acs.jpcb.6c02936) · [Supporting Information DOI](https://doi.org/10.1021/acs.jpcb.6c02936.s001)
 
 ## Reference & Citation
 
 ZHU MolEnergy Workbench is built on the scientific research and pretrained molecular-energy models reported in the JPCB article above. If you use its published method or pretrained models, cite:
 
-> Zhu, J.; Zhou, J.; Sun, Z.; Huang, X.; Nie, Z. High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning. *J. Phys. Chem. B* **2026**. https://doi.org/10.1021/acs.jpcb.6c02936.
+> Zhu, J.; Zhou, J.; Sun, Z.; Huang, X.; Nie, Z. High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning. *J. Phys. Chem. B* **2026**, **130** (22), 5819–5828. https://doi.org/10.1021/acs.jpcb.6c02936.
 
 Machine-readable records are provided in [`CITATION.cff`](CITATION.cff) and [`CITATION.bib`](CITATION.bib). GFN2-xTB optimization, interactive 3D rendering, expanded solvent workbench features, and database-QC tooling are subsequent software extensions; they are not described as original results of the JPCB paper.
 
@@ -47,7 +47,7 @@ For the existing validated installation, double-click `Launch_ZHU_MolEnergy.bat`
 
 For a clean installation, install 64-bit Python 3.10-3.13, double-click `install_windows.bat`, then use the launcher. The server binds to `127.0.0.1`, disables usage telemetry, reuses a healthy launcher-owned instance, and chooses a free local port if 8501 is occupied.
 
-The interface has eight workspaces: Predict, Batch Screening, Molecular Explorer, Solvent Comparison, ORCA Workbench, Model Training, local-owner Data Quality, and About & Citation.
+The interface has nine workspaces: Predict, Batch Screening, Molecular Explorer, Solvent Comparison, ORCA Workbench, Model Training, local-owner Data Quality, reversible Data Cleaning & Outlier Removal, and About & Citation.
 
 ## Visualization, xTB, and DFT QC
 
@@ -55,7 +55,7 @@ The Molecular Explorer supports drawing styles, atom indices/maps, charges, hydr
 
 GFN2-xTB is **not bundled or installed automatically**. If an existing native Windows `xtb.exe` is configured, the workbench verifies it and runs `--gfn 2 --opt tight` with explicit charge and unpaired-electron arguments in an isolated `local_jobs/xtb` directory. xTB/ALPB results remain distinct from ORCA CPCM reference calculations and GPR predictions. RDKit MMFF/UFF optimization remains available when xTB is absent.
 
-`scripts/run_dft_qc.py` audits supplied ORCA files read-only. It checks identity, composition, charge/multiplicity, task, method/basis, solvent protocol, pairing, convergence evidence, frequencies, geometry contacts, and group-fold composition-aware residuals. Statistical extremes are review signals only. `passed_automated_checks` is explicitly not a claim of human verification. Raw and published-reference records are never edited or removed; original, automated-pass, and human-reviewed views remain separate. Detailed record-level results are local/internal and ignored by Git.
+`scripts/run_dft_qc.py` audits supplied ORCA files read-only. It checks identity, composition, charge/multiplicity, task, method/basis, solvent protocol, pairing, convergence evidence, frequencies, geometry contacts, and group-fold composition-aware residuals. The Data Cleaning workspace adds IQR, Z-score, modified Z-score/MAD, Isolation Forest, composition-residual and ORCA-QC screening. Explicit actions remove records only from a reversible working copy, with Undo/Restore and `dataset_cleaned_v1.csv`, `excluded_records.csv`, and `cleaning_report.json` exports. Statistical extremes are review signals only. Raw files and published-reference records are never edited or deleted, and cleaned-model diagnostics are never presented as published JPCB results.
 
 For offline deployment, run `prepare_offline_windows.ps1` on a connected Windows computer with the target Python version, copy the repository plus generated `wheelhouse`, and run `install_windows_offline.bat` on the offline computer.
 

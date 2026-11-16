@@ -1,5 +1,5 @@
 # Fully resolved on Windows x86-64, CPython 3.13.5, with include-system-site-packages=false.
-# Generated for ZHU MolEnergy Workbench v1.2.1; install the local project after this file.
+# Generated for ZHU MolEnergy Workbench v1.3.0; install the local project after this file.
 altair==5.5.0
 attrs==26.1.0
 blinker==1.9.0

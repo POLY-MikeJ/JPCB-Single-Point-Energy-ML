@@ -1,4 +1,4 @@
-# ZHU MolEnergy Workbench v1.2.1 development features
+# ZHU MolEnergy Workbench v1.3.0 development features
 
 ## Desktop launch
 
@@ -6,7 +6,7 @@
 
 ## Molecular viewers
 
-2D rendering is based on RDKit and preserves the parsed chemical graph while changing display settings. 3D conformers are seeded ETKDG geometries with optional MMFF94, MMFF94s, or UFF optimization. They are not the published ORCA geometries. RMSD is computed only after exact atom-order and element checks.
+2D rendering is based on RDKit and preserves the parsed chemical graph while changing display settings. Publication, index, charge, heteroatom, aromatic and transparent-background modes are supported. 3D conformers are seeded ETKDG geometries with optional MMFF94, MMFF94s, or UFF optimization and six display representations. They are not the published ORCA geometries. RMSD is computed only after exact atom-order and element checks.
 
 ## GFN2-xTB adapter
 
@@ -15,3 +15,5 @@ xTB is detected from an explicit executable path or PATH and verified with `--ve
 ## Scientific QC governance
 
 The local audit preserves all source data. A composition reference is fitted out-of-fold by canonical structure group. Its robust residual is a review signal rather than an exclusion rule. `review_decisions.csv` supports explicit include, exclude, and restore decisions without editing raw files. Detailed paths and record-level findings stay outside the public Git tree.
+
+The reversible Data Cleaning workspace combines IQR, Z-score, modified Z-score/MAD, Isolation Forest, composition-adjusted residuals and ORCA-QC evidence. Category A records may be suggested for exclusion from a working copy; category B statistical extremes are retained until a user explicitly selects an action. Undo, Restore Original Dataset, and three provenance-bearing output files protect the original audit and raw calculations.

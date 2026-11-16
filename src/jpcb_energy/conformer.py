@@ -44,6 +44,10 @@ def conformer_sdf(mol: Chem.Mol, title: str = "ZHU MolEnergy conformer") -> str:
     result = Chem.Mol(mol); result.SetProp("_Name", title); return Chem.MolToMolBlock(result) + "\n$$$$\n"
 
 
+def conformer_mol(mol: Chem.Mol, title: str = "ZHU MolEnergy conformer") -> str:
+    result = Chem.Mol(mol); result.SetProp("_Name", title); return Chem.MolToMolBlock(result) + "\n"
+
+
 def conformer_xyz(mol: Chem.Mol, comment: str = "RDKit illustrative conformer") -> str:
     conf = mol.GetConformer(); lines = [str(mol.GetNumAtoms()), comment]
     for atom in mol.GetAtoms():
@@ -54,18 +58,24 @@ def conformer_xyz(mol: Chem.Mol, comment: str = "RDKit illustrative conformer") 
 def plotly_figure(mol: Chem.Mol, style: str = "ball-and-stick", color_scheme: str = "CPK", background: str = "light", show_hydrogens: bool = True, labels: str = "none", atom_scale: float = 1.0, bond_width: float = 5.0, auto_spin: bool = False):
     import plotly.graph_objects as go
     hidden = {idx for idx, atom in enumerate(mol.GetAtoms()) if atom.GetAtomicNum() == 1 and not show_hydrogens}; conf = mol.GetConformer()
-    cpk = {1:"#E8EEF7",6:"#334155",7:"#2563EB",8:"#EF4444",9:"#14B8A6",15:"#F59E0B",16:"#EAB308",17:"#22C55E",35:"#A16207",53:"#7C3AED"}; traces = []
+    cpk = {1:"#E8EEF7",6:"#334155",7:"#2563EB",8:"#EF4444",9:"#14B8A6",15:"#F59E0B",16:"#EAB308",17:"#22C55E",35:"#A16207",53:"#7C3AED"}; pastel={1:"#F8FAFC",6:"#64748B",7:"#60A5FA",8:"#FB7185",9:"#5EEAD4",15:"#FBBF24",16:"#FDE047",17:"#4ADE80"}; traces = []
+    line_width = 2 if style == "wireframe" else max(bond_width, 8.0) if style in {"licorice / tube", "cartoon-like"} else bond_width
     for bond in mol.GetBonds():
         first, second = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
         if first in hidden or second in hidden: continue
-        a,b=conf.GetAtomPosition(first),conf.GetAtomPosition(second); traces.append(go.Scatter3d(x=[a.x,b.x],y=[a.y,b.y],z=[a.z,b.z],mode="lines",line={"color":"#94A3B8","width":2 if style=="wireframe" else bond_width},hoverinfo="skip",showlegend=False))
-    if style != "stick":
+        a,b=conf.GetAtomPosition(first),conf.GetAtomPosition(second); traces.append(go.Scatter3d(x=[a.x,b.x],y=[a.y,b.y],z=[a.z,b.z],mode="lines",line={"color":"#94A3B8","width":line_width},hoverinfo="skip",showlegend=False))
+    if style not in {"stick", "wireframe"}:
         xs=[]; ys=[]; zs=[]; hover=[]; colors=[]; sizes=[]; labels_text=[]
         for idx,atom in enumerate(mol.GetAtoms()):
             if idx in hidden: continue
-            point=conf.GetAtomPosition(idx); xs.append(point.x); ys.append(point.y); zs.append(point.z); hover.append(f"{atom.GetSymbol()} {idx} · formal charge {atom.GetFormalCharge()}"); colors.append("#06B6D4" if color_scheme=="monochrome" else cpk.get(atom.GetAtomicNum(),"#64748B")); sizes.append((15 if style=="sphere" else 8)*atom_scale); labels_text.append(str(idx) if labels=="index" else atom.GetSymbol() if labels=="element" else "")
+            point=conf.GetAtomPosition(idx); xs.append(point.x); ys.append(point.y); zs.append(point.z); hover.append(f"{atom.GetSymbol()} {idx} · formal charge {atom.GetFormalCharge()}")
+            if color_scheme=="formal charge": color="#EF4444" if atom.GetFormalCharge()<0 else "#06B6D4" if atom.GetFormalCharge()>0 else "#94A3B8"
+            elif color_scheme=="element pastel": color=pastel.get(atom.GetAtomicNum(),"#94A3B8")
+            else: color="#06B6D4" if color_scheme=="monochrome" else cpk.get(atom.GetAtomicNum(),"#64748B")
+            colors.append(color); base_size=17 if style=="sphere / space-filling" else 10 if style=="licorice / tube" else 9 if style=="cartoon-like" else 8; sizes.append(base_size*atom_scale)
+            labels_text.append(str(idx) if labels=="index" else atom.GetSymbol() if labels=="element" else f"{atom.GetSymbol()}{idx}" if labels=="element + index" else f"{atom.GetFormalCharge():+d}" if labels=="formal charge" else "")
         traces.append(go.Scatter3d(x=xs,y=ys,z=zs,mode="markers+text" if labels!="none" else "markers",marker={"size":sizes,"color":colors,"line":{"width":1,"color":"#0F172A"}},text=labels_text,textposition="top center",hovertext=hover,hoverinfo="text",showlegend=False))
-    background_color = "rgba(0,0,0,0)" if background=="transparent" else "#07111F" if background=="dark" else "#F8FAFC"
+    background_color = "rgba(0,0,0,0)" if background in {"transparent","gradient"} else "#07111F" if background=="dark" else "#F8FAFC"
     figure=go.Figure(traces); figure.update_layout(margin={"l":8,"r":8,"t":8,"b":8},paper_bgcolor=background_color,scene={"bgcolor":background_color,"xaxis":{"visible":False},"yaxis":{"visible":False},"zaxis":{"visible":False},"aspectmode":"data","camera":{"center":{"x":0,"y":0,"z":0},"eye":{"x":1.55,"y":1.55,"z":1.15},"projection":{"type":"perspective"}}},uirevision="zhu-molenergy-3d",meta={"auto_spin_requested":bool(auto_spin)})
     return figure
 

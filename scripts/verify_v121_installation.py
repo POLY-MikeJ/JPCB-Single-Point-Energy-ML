@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Installed-environment smoke test for ZHU MolEnergy Workbench v1.2.1."""
+"""Installed-environment smoke test for ZHU MolEnergy Workbench v1.3.0."""
 
 from __future__ import annotations
 
