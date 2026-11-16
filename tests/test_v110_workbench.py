@@ -22,8 +22,10 @@ def test_v100_artifact_and_fixed_reference_predictions_are_unchanged():
     assert sha256(ROOT / "models" / "gpr_model.joblib") == "1ee727e346afcd04af8d50314038dd23a37b002d74fd0e072813d38377618983"
     models = discover_models(ROOT)
     legacy = models["v1.0.0-vacuum-reference"]
-    assert predict_with_bundle("C=CC(=O)N", legacy)["prediction"] == pytest.approx(-244.90620512295402, abs=1e-10)
-    assert predict_with_bundle("CC[N+](C)(C)CCO", legacy)["prediction"] == pytest.approx(-367.17459264157856, abs=1e-10)
+    # BLAS implementations can differ in their final few floating-point bits
+    # across supported Windows/Python combinations.
+    assert predict_with_bundle("C=CC(=O)N", legacy)["prediction"] == pytest.approx(-244.90620512295402, abs=1e-6)
+    assert predict_with_bundle("CC[N+](C)(C)CCO", legacy)["prediction"] == pytest.approx(-367.17459264157856, abs=1e-6)
 
 
 def test_all_five_solvent_models_load_predict_and_validate_hashes():

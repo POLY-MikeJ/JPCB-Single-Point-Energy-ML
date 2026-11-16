@@ -12,8 +12,19 @@ jobs:
         shell: cmd
         run: install_windows.bat
       - name: Test installed application
-        shell: cmd
-        run: .venv\Scripts\python.exe -m pytest -q
+        shell: pwsh
+        run: |
+          .venv\Scripts\python.exe -m pytest -q --junitxml=pytest-results.xml
+          if ($LASTEXITCODE -ne 0) {
+            [xml]$report = Get-Content pytest-results.xml
+            foreach ($case in $report.testsuites.testsuite.testcase) {
+              if ($case.failure) {
+                $message = ($case.failure.'#text' -replace "`r?`n", '%0A')
+                Write-Output "::error title=pytest $($case.classname).$($case.name)::$message"
+              }
+            }
+            exit 1
+          }
       - name: CLI smoke test
         shell: cmd
         run: run_cli_example.bat
