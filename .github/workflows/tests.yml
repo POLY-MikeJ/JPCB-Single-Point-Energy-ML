@@ -8,6 +8,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install -e .[test]
-      - run: python -m pytest -q
+      - name: Clean Windows installation
+        shell: cmd
+        run: install_windows.bat
+      - name: Test installed application
+        shell: cmd
+        run: .venv\Scripts\python.exe -m pytest -q
+      - name: CLI smoke test
+        shell: cmd
+        run: run_cli_example.bat
 

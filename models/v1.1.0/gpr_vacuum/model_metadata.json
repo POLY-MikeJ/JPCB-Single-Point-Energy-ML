@@ -1,0 +1,84 @@
+{
+  "model_id": "v1.1.0-gpr-vacuum",
+  "model_version": "1.1.0",
+  "environment": "vacuum",
+  "dielectric_constant": 1.0,
+  "dielectric_source": "Parsed from ORCA output CPCM Epsilon; vacuum recorded as 1.0",
+  "target_definition": "ORCA FINAL SINGLE POINT ENERGY from the environment-specific frequency job at its optimized geometry; electronic SCF energy without ZPE or thermal correction",
+  "target_unit": "Eh",
+  "feature_order": [
+    "mordred_ATS0m",
+    "mordred_ZMIC2",
+    "mordred_ATSC0p",
+    "mordred_ATS2s",
+    "mordred_VR2_D",
+    "mordred_AETA_eta_R",
+    "mordred_ETA_eta_F",
+    "mordred_ATSC0dv"
+  ],
+  "training_records": 207,
+  "unique_structure_groups": 192,
+  "method": [
+    "B3LYP"
+  ],
+  "basis_set": [
+    "6-311++G(d,p)"
+  ],
+  "validation": {
+    "environment": "vacuum",
+    "n_records": 207,
+    "n_unique_structure_groups": 192,
+    "group_holdout_train_records": 166,
+    "group_holdout_test_records": 41,
+    "group_holdout_train_groups": 153,
+    "group_holdout_test_groups": 39,
+    "train_test_group_overlap": 0,
+    "legacy_random_holdout": {
+      "mae_Eh": 6.479326557931889,
+      "rmse_Eh": 17.409769242025043,
+      "r2": 0.9933364172540108,
+      "median_absolute_error_Eh": 1.218945625106187,
+      "residual_mean_Eh": -5.1579186307581795,
+      "residual_std_Eh": 16.62816708056059,
+      "absolute_error_p90_Eh": 9.033365271643355,
+      "absolute_error_p95_Eh": 53.74289553654336,
+      "maximum_absolute_error_Eh": 74.28555053638559
+    },
+    "group_holdout": {
+      "mae_Eh": 3.193440947008559,
+      "rmse_Eh": 5.934450956025242,
+      "r2": 0.9994381447478895,
+      "median_absolute_error_Eh": 0.5546263552710116,
+      "residual_mean_Eh": 2.0216657120427097,
+      "residual_std_Eh": 5.579478102674098,
+      "absolute_error_p90_Eh": 10.092928380550461,
+      "absolute_error_p95_Eh": 15.500395021757413,
+      "maximum_absolute_error_Eh": 17.84166808191071
+    },
+    "group_kfold_cv": {
+      "mae_Eh": 1.934275932420252,
+      "rmse_Eh": 3.8367255402316687,
+      "r2": 0.9997007706334632,
+      "median_absolute_error_Eh": 0.9330573041270327,
+      "residual_mean_Eh": 0.1884008991304998,
+      "residual_std_Eh": 3.832097072396889,
+      "absolute_error_p90_Eh": 4.444623350374846,
+      "absolute_error_p95_Eh": 7.492431453352634,
+      "maximum_absolute_error_Eh": 28.13075682370595
+    }
+  },
+  "protocol_excluded_records": [
+    "HEA",
+    "HEMA"
+  ],
+  "domain_thresholds": {
+    "distance_borderline": 1.0613826855568702,
+    "distance_outside": 2.483132268084532,
+    "threshold_protocol": "95th and 1.5x-99th percentiles of leave-one-out standardized nearest-neighbor distances on training-only data"
+  },
+  "software_versions": {
+    "python": "3.13.5",
+    "scikit-learn": "1.6.1"
+  },
+  "model_sha256": "0b291aacd6a1376363757f2188a2648516c81c50e8ab63e23f25dcf9123617ec"
+}

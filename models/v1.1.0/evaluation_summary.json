@@ -1,0 +1,18 @@
+{
+  "paired_core_records_per_environment": 207,
+  "paired_unique_canonical_groups": 192,
+  "protocol_excluded_records": ["HEA", "HEMA"],
+  "protocol_exclusion_reason": "Water output did not execute CPCM despite the separate input file containing CPCM(water); output had no Epsilon section and echoed a non-CPCM keyword line.",
+  "water_additional_evaluation_records": 791,
+  "water_exact_canonical_overlap_with_core": 4,
+  "water_near_duplicate_count_tanimoto_ge_0_95": 4,
+  "water_set_independent": false,
+  "water_set_designation": "additional external evaluation set",
+  "water_metrics": {
+    "mae_Eh": 29.781781796471233,
+    "rmse_Eh": 59.2370917423343,
+    "r2": 0.9367945561073363,
+    "median_absolute_error_Eh": 5.005423761976431,
+    "maximum_absolute_error_Eh": 203.5217811584032
+  }
+}

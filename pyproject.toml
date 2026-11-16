@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jpcb-single-point-energy-ml"
-version = "1.0.0"
-description = "Local prediction of single-point energies for charged polymer monomers"
+version = "1.1.0"
+description = "Local multi-solvent energy prediction and ORCA analysis workbench for polymer monomers"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
 license = {text = "MIT"}
 dependencies = [
   "joblib==1.4.2", "matplotlib==3.10.0", "mordredcommunity==2.0.7",
   "numpy==2.1.3", "pandas==2.2.3", "pillow==11.1.0", "rdkit==2025.9.6",
-  "scikit-learn==1.6.1", "streamlit==1.45.1"
+  "plotly==5.24.1", "scikit-learn==1.6.1", "streamlit==1.45.1"
 ]
 
 [project.optional-dependencies]
