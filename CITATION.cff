@@ -1,10 +1,11 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite the article."
-title: "JPCB Single-Point Energy ML"
-version: 1.0.0
-date-released: 2026-11-15
+message: "If you use the pretrained prediction method or models, cite the JPCB article below and the software."
+title: "ZHU MolEnergy Workbench: Molecular Energy Prediction, Visualization & Computational Chemistry"
+version: 1.2.1
+date-released: 2026-11-16
 license: MIT
-repository-code: "https://github.com/POLY-MikeJ/JPCB-Single-Point-Energy-ML"
+repository-code: "https://github.com/POLY-MikeJ/ZHU-MolEnergy"
+url: "https://github.com/POLY-MikeJ/ZHU-MolEnergy"
 authors:
   - family-names: Zhu
     given-names: Jie
@@ -25,4 +26,5 @@ preferred-citation:
   journal: "The Journal of Physical Chemistry B"
   year: 2026
   doi: 10.1021/acs.jpcb.6c02936
+  url: "https://doi.org/10.1021/acs.jpcb.6c02936"
 

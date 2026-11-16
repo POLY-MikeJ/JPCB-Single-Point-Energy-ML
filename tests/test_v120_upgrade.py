@@ -21,7 +21,7 @@ def test_original_predict_page_path_has_no_streamlit_exception():
     assert not app.exception
     app.button(key="predict_button").click().run(timeout=30)
     assert not app.exception
-    assert any("-244.583" in metric.value for metric in app.metric)
+    assert any("Eh" in metric.value for metric in app.metric)
 
 
 def test_2d_settings_preserve_identity_and_exports_scale():
@@ -76,19 +76,19 @@ def test_geometry_identity_composition_reference_and_reversible_inclusion(tmp_pa
     inp.write_text("| 9> * xyz 1 1\n| 10> C 0.0 0.0 0.0\n| 11> H 0.0 0.0 1.1\n| 12> *\n")
     parsed = parse_geometry(inp)
     assert parsed["geometry_charge"] == 1 and parsed["atom_count"] == 2
-    frame = pd.DataFrame({"record_key":[f"x:{i}" for i in range(10)],"record_id":[str(i) for i in range(10)],"canonical_smiles":[f"C{i}" for i in range(10)],"element_counts":[json.dumps({"C":i+1,"H":2*i+4}) for i in range(10)],"charge":[0]*10,"final_single_point_energy_Eh":[-40*(i+1) for i in range(10)],"qc_status":["verified"]*9+["invalid_calculation"]})
+    frame = pd.DataFrame({"record_key":[f"x:{i}" for i in range(10)],"record_id":[str(i) for i in range(10)],"canonical_smiles":[f"C{i}" for i in range(10)],"element_counts":[json.dumps({"C":i+1,"H":2*i+4}) for i in range(10)],"charge":[0]*10,"final_single_point_energy_Eh":[-40*(i+1) for i in range(10)],"qc_status":["passed_automated_checks"]*9+["invalid_calculation"]})
     assert composition_oof_residuals(frame).notna().all()
     initial = reversible_inclusion(frame)
     assert not bool(initial.iloc[-1].include_verified_strict)
-    restored = reversible_inclusion(frame, pd.DataFrame({"record_key":["x:9"],"review_decision":["restore"],"reviewed_by":["reviewer"]}))
+    restored = reversible_inclusion(frame, pd.DataFrame({"record_key":["x:9"],"review_decision":["include"],"reviewed_by":["reviewer"],"reviewed_at":["2026-11-16"]}))
     assert bool(restored.iloc[-1].include_verified_strict)
 
 
 def test_desktop_launchers_use_project_venv_and_safe_stop_state():
-    launcher = (ROOT / "Launch_JPCB_Workbench.bat").read_text(encoding="utf-8")
-    stop = (ROOT / "Stop_JPCB_Workbench.bat").read_text(encoding="utf-8")
+    launcher = (ROOT / "Launch_ZHU_MolEnergy.bat").read_text(encoding="utf-8")
+    stop = (ROOT / "Stop_ZHU_MolEnergy.bat").read_text(encoding="utf-8")
     source = (ROOT / "scripts" / "launcher.py").read_text(encoding="utf-8")
-    assert "%~dp0.venv\\Scripts\\python.exe" in launcher
+    assert "%~dp0.venv\\Scripts\\python.exe" in launcher and "ZHU_MOLENERGY_PYTHON" in launcher
     assert "taskkill" not in stop.lower() and "launcher.py\" stop" in stop
     assert '["taskkill","/PID",str(pid),"/T","/F"]' in source and "taskkill /IM python" not in source
     completed = subprocess.run([str(ROOT / ".venv" / "Scripts" / "python.exe"), str(ROOT / "scripts" / "launcher.py"), "diagnose"], capture_output=True, text=True, check=True)

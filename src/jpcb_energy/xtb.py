@@ -32,8 +32,8 @@ class XTBInstallation:
 
 def detect_xtb(explicit_path: str | Path | None = None) -> XTBInstallation:
     candidate = Path(explicit_path).expanduser() if explicit_path else None
-    portable_root = Path(__file__).resolve().parents[2] / "local_tools"
-    portable = next(portable_root.rglob("xtb.exe"), None) if portable_root.is_dir() else None
+    portable_roots = [Path(__file__).resolve().parents[2] / "local_tools", Path.cwd() / "local_tools"]
+    portable = next((match for root in portable_roots if root.is_dir() for match in root.rglob("xtb.exe")), None)
     resolved = str(candidate.resolve()) if candidate and candidate.is_file() else shutil.which("xtb") or shutil.which("xtb.exe") or (str(portable.resolve()) if portable else None)
     if not resolved:
         return XTBInstallation(False, None, None, "xTB was not found. Configure an existing native Windows xtb.exe; this application does not install or bundle xTB.")

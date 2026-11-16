@@ -1,5 +1,3 @@
 @echo off
-setlocal
-cd /d "%~dp0"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Install_Desktop_Shortcut.ps1"
-if errorlevel 1 pause
+rem Backward-compatible v1.2 alias.
+call "%~dp0Install_ZHU_MolEnergy_Desktop_Shortcut.bat"

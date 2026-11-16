@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Windows launcher and safe stopper for the local Streamlit workbench."""
+"""Windows launcher and safe stopper for ZHU MolEnergy Workbench."""
 
 from __future__ import annotations
 
@@ -18,9 +18,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON = ROOT / ".venv" / "Scripts" / "python.exe"
 APP = ROOT / "src" / "jpcb_energy" / "app.py"
-STATE_DIR = ROOT / "local_jobs" / "launcher"
-STATE = STATE_DIR / "launcher_state.json"
-LOG = STATE_DIR / "streamlit.log"
+STATE_DIR = ROOT / "local_jobs" / "zhu_molenergy_launcher"
+STATE = STATE_DIR / "zhu_molenergy_launcher_state.json"
+LOG = STATE_DIR / "zhu_molenergy_streamlit.log"
 
 
 def health(port: int, timeout: float = 0.8) -> bool:
@@ -70,14 +70,14 @@ def start() -> int:
         print(f"ERROR: Application entry point not found: {APP}"); return 2
     previous = load_state()
     if previous and previous.get("project_root") == str(ROOT) and pid_alive(int(previous.get("pid", -1))) and health(int(previous.get("port", 0))):
-        url=previous["url"]; print(f"Workbench is already running: {url}"); webbrowser.open(url); return 0
+        url=previous["url"]; print(f"ZHU MolEnergy Workbench is already running: {url}"); webbrowser.open(url); return 0
     port=free_port(); url=f"http://127.0.0.1:{port}"; STATE_DIR.mkdir(parents=True,exist_ok=True)
     command=[str(PYTHON),"-m","streamlit","run",str(APP),"--server.address=127.0.0.1",f"--server.port={port}","--server.headless=true","--browser.gatherUsageStats=false","--server.fileWatcherType=none"]
     creationflags=getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0)|getattr(subprocess,"DETACHED_PROCESS",0)
     with LOG.open("a",encoding="utf-8") as log:
         process=subprocess.Popen(command,cwd=ROOT,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,creationflags=creationflags,shell=False,close_fds=True)
     state={"pid":process.pid,"bootstrap_pid":process.pid,"port":port,"url":url,"project_root":str(ROOT),"python":str(PYTHON),"command":command,"started_at":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"log":str(LOG)}; STATE.write_text(json.dumps(state,indent=2),encoding="utf-8")
-    print(f"Starting JPCB Molecular Energy Workbench at {url}")
+    print(f"Starting ZHU MolEnergy Workbench at {url}")
     for _ in range(90):
         if health(port):
             state["pid"] = listening_pid(port) or process.pid; STATE.write_text(json.dumps(state,indent=2),encoding="utf-8")

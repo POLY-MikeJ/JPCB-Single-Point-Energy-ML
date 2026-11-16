@@ -1,8 +1,20 @@
-# JPCB Molecular Energy Workbench
+# ZHU MolEnergy Workbench
 
-Windows-ready, local molecular energy, visualization, geometry optimization, and ORCA quality-control software for polar and charged polymer monomers. Version 1.2 adds desktop launch, richer molecular viewers, an optional GFN2-xTB adapter, and reproducible DFT database auditing while preserving the exact v1.0.0 vacuum model.
+*Molecular Energy Prediction, Visualization & Computational Chemistry*
+
+Windows-ready local software for molecular-energy prediction, molecular visualization, geometry optimization, ORCA analysis, and traceable DFT quality control. Version 1.2.1 adopts the ZHU MolEnergy identity while preserving every v1.0.0/v1.1.0 model identifier and artifact.
 
 > Jie Zhu, Jing Zhou, Zhaoyan Sun, Xiayun Huang, and Zhihong Nie, “High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning,” *The Journal of Physical Chemistry B* (2026). [Article DOI](https://doi.org/10.1021/acs.jpcb.6c02936) · [Supporting Information DOI](https://doi.org/10.1021/acs.jpcb.6c02936.s001)
+
+## Reference & Citation
+
+ZHU MolEnergy Workbench is built on the scientific research and pretrained molecular-energy models reported in the JPCB article above. If you use its published method or pretrained models, cite:
+
+> Zhu, J.; Zhou, J.; Sun, Z.; Huang, X.; Nie, Z. High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning. *J. Phys. Chem. B* **2026**. https://doi.org/10.1021/acs.jpcb.6c02936.
+
+Machine-readable records are provided in [`CITATION.cff`](CITATION.cff) and [`CITATION.bib`](CITATION.bib). GFN2-xTB optimization, interactive 3D rendering, expanded solvent workbench features, and database-QC tooling are subsequent software extensions; they are not described as original results of the JPCB paper.
+
+The proposed future repository slug is `POLY-MikeJ/ZHU-MolEnergy`. The repository itself is not renamed by this development branch; a repository-owner rename and redirect verification remain a separate approved release action.
 
 ## Workbench scope
 
@@ -18,7 +30,9 @@ The official models use Mordred descriptors `ATS0m`, `ZMIC2`, `ATSC0p`, `ATS2s`,
 - recursive, read-only ORCA output indexing;
 - isolated group-aware user-model training.
 
-All molecular processing remains local. The target is the final ORCA electronic SCF energy printed as `FINAL SINGLE POINT ENERGY` by the environment-specific frequency calculation at its optimized geometry, in Hartree (`Eh`). ZPE, thermal energy, enthalpy, and Gibbs energy are separately parsed and are not mixed with this target.
+All molecular processing remains local. The released model artifacts predict the final ORCA electronic SCF energy printed as `FINAL SINGLE POINT ENERGY` by the environment-specific frequency calculation at its optimized geometry, in Hartree (`Eh`). ZPE, thermal energy, enthalpy, and Gibbs energy are separately parsed and are not mixed with these released labels.
+
+The published article contains an internal wording inconsistency: its introduction defines `E_sp` as final SCF electronic energy, while one Methods sentence says SCF energy combined with thermal corrections at 298.15 K. Direct inspection of the original `monomers_0404.csv` target column, raw ORCA outputs, training-validation table, and immutable released model metadata shows that the distributed model labels correspond to `FINAL SINGLE POINT ENERGY`, not the thermal-energy/enthalpy/Gibbs fields. The software preserves those labels and reports the inconsistency rather than silently redefining the model.
 
 ## Official model registry
 
@@ -29,11 +43,11 @@ The enhanced comparison uses 207 protocol-consistent molecules in every environm
 
 ## Windows installation and GUI
 
-For the existing validated installation, double-click `Launch_JPCB_Workbench.bat`; it invokes the project `.venv` directly and does not rely on `python` or `py` on PATH. To create a per-user desktop shortcut named **JPCB Molecular Energy Workbench**, double-click `Install_Desktop_Shortcut.bat`. `Stop_JPCB_Workbench.bat` stops only the server PID recorded by this launcher.
+For the existing validated installation, double-click `Launch_ZHU_MolEnergy.bat`; it invokes the project `.venv` directly and does not rely on `python` or `py` on PATH. To create a per-user desktop shortcut named **ZHU MolEnergy Workbench**, double-click `Install_ZHU_MolEnergy_Desktop_Shortcut.bat`. `Stop_ZHU_MolEnergy.bat` stops only the server PID recorded by this launcher. The previous JPCB-named batch files remain compatibility aliases.
 
 For a clean installation, install 64-bit Python 3.10-3.13, double-click `install_windows.bat`, then use the launcher. The server binds to `127.0.0.1`, disables usage telemetry, reuses a healthy launcher-owned instance, and chooses a free local port if 8501 is occupied.
 
-The interface has eight workspaces: Predict, Batch Screening, Molecular Explorer, Solvent Comparison, ORCA Workbench, Model Training, local-owner Data Quality, and Help / About.
+The interface has eight workspaces: Predict, Batch Screening, Molecular Explorer, Solvent Comparison, ORCA Workbench, Model Training, local-owner Data Quality, and About & Citation.
 
 ## Visualization, xTB, and DFT QC
 
@@ -41,7 +55,7 @@ The Molecular Explorer supports drawing styles, atom indices/maps, charges, hydr
 
 GFN2-xTB is **not bundled or installed automatically**. If an existing native Windows `xtb.exe` is configured, the workbench verifies it and runs `--gfn 2 --opt tight` with explicit charge and unpaired-electron arguments in an isolated `local_jobs/xtb` directory. xTB/ALPB results remain distinct from ORCA CPCM reference calculations and GPR predictions. RDKit MMFF/UFF optimization remains available when xTB is absent.
 
-`scripts/run_dft_qc.py` audits supplied ORCA files read-only. It checks identity, composition, charge/multiplicity, task, method/basis, solvent protocol, pairing, convergence evidence, frequencies, geometry contacts, and group-fold composition-aware residuals. Statistical extremes are review signals only. Raw and published-reference records are never edited or removed; reversible `original_published` and `verified_strict` views remain separate. Detailed record-level results are local/internal and ignored by Git.
+`scripts/run_dft_qc.py` audits supplied ORCA files read-only. It checks identity, composition, charge/multiplicity, task, method/basis, solvent protocol, pairing, convergence evidence, frequencies, geometry contacts, and group-fold composition-aware residuals. Statistical extremes are review signals only. `passed_automated_checks` is explicitly not a claim of human verification. Raw and published-reference records are never edited or removed; original, automated-pass, and human-reviewed views remain separate. Detailed record-level results are local/internal and ignored by Git.
 
 For offline deployment, run `prepare_offline_windows.ps1` on a connected Windows computer with the target Python version, copy the repository plus generated `wheelhouse`, and run `install_windows_offline.bat` on the offline computer.
 

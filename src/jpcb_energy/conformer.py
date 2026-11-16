@@ -40,7 +40,7 @@ def conformer_rmsd(reference: Chem.Mol, probe: Chem.Mol) -> float:
     return float(rdMolAlign.GetBestRMS(probe, reference))
 
 
-def conformer_sdf(mol: Chem.Mol, title: str = "JPCB conformer") -> str:
+def conformer_sdf(mol: Chem.Mol, title: str = "ZHU MolEnergy conformer") -> str:
     result = Chem.Mol(mol); result.SetProp("_Name", title); return Chem.MolToMolBlock(result) + "\n$$$$\n"
 
 
@@ -66,7 +66,7 @@ def plotly_figure(mol: Chem.Mol, style: str = "ball-and-stick", color_scheme: st
             point=conf.GetAtomPosition(idx); xs.append(point.x); ys.append(point.y); zs.append(point.z); hover.append(f"{atom.GetSymbol()} {idx} · formal charge {atom.GetFormalCharge()}"); colors.append("#06B6D4" if color_scheme=="monochrome" else cpk.get(atom.GetAtomicNum(),"#64748B")); sizes.append((15 if style=="sphere" else 8)*atom_scale); labels_text.append(str(idx) if labels=="index" else atom.GetSymbol() if labels=="element" else "")
         traces.append(go.Scatter3d(x=xs,y=ys,z=zs,mode="markers+text" if labels!="none" else "markers",marker={"size":sizes,"color":colors,"line":{"width":1,"color":"#0F172A"}},text=labels_text,textposition="top center",hovertext=hover,hoverinfo="text",showlegend=False))
     background_color = "rgba(0,0,0,0)" if background=="transparent" else "#07111F" if background=="dark" else "#F8FAFC"
-    figure=go.Figure(traces); figure.update_layout(margin={"l":0,"r":0,"t":8,"b":0},paper_bgcolor=background_color,scene={"bgcolor":background_color,"xaxis":{"visible":False},"yaxis":{"visible":False},"zaxis":{"visible":False},"aspectmode":"data"},uirevision="jpcb-3d",scene_camera={"eye":{"x":1.5,"y":1.5,"z":1.1}},meta={"auto_spin_requested":bool(auto_spin)})
+    figure=go.Figure(traces); figure.update_layout(margin={"l":8,"r":8,"t":8,"b":8},paper_bgcolor=background_color,scene={"bgcolor":background_color,"xaxis":{"visible":False},"yaxis":{"visible":False},"zaxis":{"visible":False},"aspectmode":"data","camera":{"center":{"x":0,"y":0,"z":0},"eye":{"x":1.55,"y":1.55,"z":1.15},"projection":{"type":"perspective"}}},uirevision="zhu-molenergy-3d",meta={"auto_spin_requested":bool(auto_spin)})
     return figure
 
 

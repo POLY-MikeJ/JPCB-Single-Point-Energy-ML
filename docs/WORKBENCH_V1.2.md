@@ -1,8 +1,8 @@
-# Workbench v1.2 development features
+# ZHU MolEnergy Workbench v1.2.1 development features
 
 ## Desktop launch
 
-`Launch_JPCB_Workbench.bat` uses the project `.venv` directly and binds to localhost. `Install_Desktop_Shortcut.bat` creates a per-user shortcut without administrator rights. `Stop_JPCB_Workbench.bat` reads launcher state and targets only its recorded PID.
+`Launch_ZHU_MolEnergy.bat` uses the project `.venv` directly and binds to localhost. `Install_ZHU_MolEnergy_Desktop_Shortcut.bat` creates the **ZHU MolEnergy Workbench** per-user shortcut without administrator rights. `Stop_ZHU_MolEnergy.bat` reads launcher state and targets only its recorded PID. The JPCB-named scripts remain compatibility aliases.
 
 ## Molecular viewers
 

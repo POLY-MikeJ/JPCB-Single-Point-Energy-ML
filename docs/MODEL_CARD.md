@@ -10,7 +10,13 @@ Rapid local screening and ranking of the electronic single-point energy of curat
 
 ## Target
 
-Final ORCA `FINAL SINGLE POINT ENERGY` from vacuum B3LYP/6-311++G(d,p) frequency calculations at optimized geometries, in Eh. The release model is retrained directly from the current raw ORCA electronic energies and does not include ZPE or thermal corrections. A historical target table differs from some current raw outputs; this does not enter the fitted release labels and is documented in the private review package.
+Final ORCA `FINAL SINGLE POINT ENERGY` from vacuum B3LYP/6-311++G(d,p) frequency calculations at optimized geometries, in Eh. The immutable release model is fitted to the electronic-energy label and does not include ZPE, total thermal energy, enthalpy, or Gibbs free energy.
+
+### Published wording reconciliation
+
+The final JPCB article is internally inconsistent: its introduction defines `E_sp` as final self-consistent-field electronic energy, while Methods states that `E_sp` combines SCF energy with thermal corrections at 298.15 K. The original notebook reads the `target` column from `monomers_0404.csv`; direct record comparison shows this column matches the ORCA `FINAL SINGLE POINT ENERGY` electronic field (within the documented source-table deltas), rather than the parsed thermal/enthalpy/Gibbs fields. Existing model labels are therefore preserved. This is a documentation reconciliation, not a relabeling or retraining of v1.0.0/v1.1.0 artifacts.
+
+The paper is the scientific basis for the descriptor-engineered GPR method and pretrained models. xTB, expanded 3D visualization, workbench UI, and the automated database audit are later software extensions.
 
 ## Training and evaluation
 

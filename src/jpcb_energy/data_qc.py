@@ -47,10 +47,11 @@ def composition_oof_residuals(frame: pd.DataFrame) -> pd.Series:
 
 
 def reversible_inclusion(frame: pd.DataFrame, decisions: pd.DataFrame | None = None) -> pd.DataFrame:
-    output=frame.copy(); output["include_original_published"]=True; output["include_verified_strict"]=output.qc_status.eq("verified"); output["reviewed_by"]=""
+    output=frame.copy(); output["include_original_published"]=True; output["include_passed_automated"]=output.qc_status.eq("passed_automated_checks"); output["include_verified_strict"]=output["include_passed_automated"]; output["reviewed_by"]=""; output["reviewed_at"]=""
     if decisions is not None and len(decisions):
         approved=decisions.drop_duplicates("record_key",keep="last").set_index("record_key")
         for idx,key in output.record_key.items():
-            if key in approved.index and approved.loc[key,"review_decision"] in {"include","exclude","restore"}:
-                output.loc[idx,"include_verified_strict"]=approved.loc[key,"review_decision"] in {"include","restore"}; output.loc[idx,"reviewed_by"]=approved.loc[key].get("reviewed_by","")
+            action=approved.loc[key,"review_decision"] if key in approved.index else None
+            if action in {"include","quarantine","recalculate","exclude"}:
+                output.loc[idx,"include_verified_strict"]=action=="include"; output.loc[idx,"reviewed_by"]=approved.loc[key].get("reviewed_by",""); output.loc[idx,"reviewed_at"]=approved.loc[key].get("reviewed_at","")
     return output
