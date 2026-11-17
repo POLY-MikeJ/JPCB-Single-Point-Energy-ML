@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-"""Installed-environment smoke test for ZHU MolEnergy Workbench v1.3.0."""
+"""Installed-environment smoke test for ZHU MolEnergy Workbench v1.4.0."""
 
 from __future__ import annotations
 
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -31,7 +32,21 @@ def main() -> None:
         if identifier.startswith("v1.1.0")
     }
     conformers, metadata = generate_conformers("C=CC(=O)N", seed=42, count=2)
-    parsed = parse_orca(ROOT / "tests" / "data" / "representative_output.txt")
+    orca_sample = """Program Version 6.1.1
+! B3LYP 6-311++G(d,p) Freq TightSCF
+FINAL SINGLE POINT ENERGY      -100.123456789000
+Zero point energy                ...      0.05000000 Eh     31.38 kcal/mol
+Total thermal energy                   -100.06000000 Eh
+Total Enthalpy                         -100.05900000 Eh
+Final Gibbs free energy         ...   -100.08000000 Eh
+  0:       -12.50 cm**-1
+  1:        25.00 cm**-1
+                             ****ORCA TERMINATED NORMALLY****
+"""
+    with tempfile.TemporaryDirectory(prefix="zhu-molenergy-orca-") as temporary:
+        sample_path = Path(temporary) / "representative_output.txt"
+        sample_path.write_text(orca_sample, encoding="utf-8")
+        parsed = parse_orca(sample_path)
     export = add_prediction_metadata(batch, "v1.0.0-vacuum-reference", reference["metadata"])
     xtb = detect_xtb()
     result = {
