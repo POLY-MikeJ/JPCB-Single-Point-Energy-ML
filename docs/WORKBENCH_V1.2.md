@@ -2,7 +2,7 @@
 
 ## Desktop launch
 
-`Launch_ZHU_MolEnergy.bat` uses the project `.venv` directly and binds to localhost. `Install_ZHU_MolEnergy_Desktop_Shortcut.bat` creates the **ZHU MolEnergy Workbench** per-user shortcut without administrator rights. `Stop_ZHU_MolEnergy.bat` reads launcher state and targets only its recorded PID. The JPCB-named scripts remain compatibility aliases.
+`Start_ZHU_MolEnergy.bat` validates the existing project `.venv`, performs a Streamlit application-render preflight, selects a free localhost port and opens the browser. `Install_ZHU_MolEnergy_Desktop_Shortcut.bat` creates the **ZHU MolEnergy Workbench** per-user shortcut without administrator rights. `Stop_ZHU_MolEnergy.bat` reads launcher state and targets only its recorded PID. `Launch_ZHU_MolEnergy.bat` and the JPCB-named scripts remain compatibility aliases.
 
 ## Molecular viewers
 

@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Launcher = Join-Path $ProjectRoot 'Launch_ZHU_MolEnergy.bat'
+$Launcher = Join-Path $ProjectRoot 'Start_ZHU_MolEnergy.bat'
 if (-not (Test-Path -LiteralPath $Launcher)) { throw "Launcher not found: $Launcher" }
 
 $Desktop = [Environment]::GetFolderPath('Desktop')
@@ -19,7 +19,8 @@ if (Test-Path -LiteralPath $OldShortcutPath) {
     $OldTarget = [IO.Path]::GetFullPath($OldShortcut.TargetPath)
     $ExpectedTargets = @(
         [IO.Path]::GetFullPath((Join-Path $ProjectRoot 'Launch_JPCB_Workbench.bat')),
-        [IO.Path]::GetFullPath((Join-Path $ProjectRoot 'Launch_ZHU_MolEnergy.bat'))
+        [IO.Path]::GetFullPath((Join-Path $ProjectRoot 'Launch_ZHU_MolEnergy.bat')),
+        [IO.Path]::GetFullPath((Join-Path $ProjectRoot 'Start_ZHU_MolEnergy.bat'))
     )
     if ($ExpectedTargets -contains $OldTarget) {
         Remove-Item -LiteralPath $OldShortcutPath

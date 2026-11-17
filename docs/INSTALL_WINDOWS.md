@@ -2,7 +2,7 @@
 
 Use 64-bit Windows 10 or 11 and Python 3.10-3.13. Download Python from python.org and enable **Add Python to PATH**. Double-click `install_windows.bat`; it checks the Python version, creates project-local `.venv`, installs pinned CPU dependencies, and installs the package.
 
-Double-click `Launch_ZHU_MolEnergy.bat` to open ZHU MolEnergy Workbench. It invokes `.venv\Scripts\python.exe` directly, binds to `127.0.0.1`, selects a free port, waits for Streamlit health, and then opens the browser. After `.venv` exists, system `python` and `py` commands are not required. Paths containing spaces and non-ASCII characters are supported.
+Double-click `Start_ZHU_MolEnergy.bat` to open ZHU MolEnergy Workbench. It invokes `.venv\Scripts\python.exe` directly, renders a real application preflight, binds to `127.0.0.1`, selects a free port, waits for Streamlit health, and then opens the browser. After `.venv` exists, system `python` and `py` commands are not required. Paths containing spaces and non-ASCII characters are supported. `Launch_ZHU_MolEnergy.bat` remains a compatibility alias.
 
 Double-click `Install_ZHU_MolEnergy_Desktop_Shortcut.bat` to create the per-user shortcut **ZHU MolEnergy Workbench** without administrator rights. The installer removes the old project-created JPCB shortcut only after confirming that its target belongs to this project. `Stop_ZHU_MolEnergy.bat` targets only the PID recorded by this launcher.
 

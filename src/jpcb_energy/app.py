@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 from uuid import uuid4
 
@@ -53,12 +54,12 @@ st.markdown("""<style>
 </style>""", unsafe_allow_html=True)
 
 
-@st.cache_resource
+@lru_cache(maxsize=1)
 def model_registry():
     return discover_models(ROOT)
 
 
-@st.cache_data(show_spinner=False)
+@lru_cache(maxsize=8)
 def cleaning_detection(path: str, mtime: float, config_values: tuple[float, ...]) -> pd.DataFrame:
     del mtime
     config=CleaningConfig(*config_values)
@@ -109,6 +110,12 @@ def copy_button(label: str, value: str, key: str) -> None:
 
 def citation_copy_button() -> None:
     copy_button("Cite This Work", ACS_CITATION, "cite_work")
+
+
+def empty_state(message: str) -> None:
+    text,image=st.columns([.78,.22],vertical_alignment="center")
+    text.info(message)
+    if MASCOT_PATH.is_file(): image.image(str(MASCOT_PATH),use_container_width=True)
 
 
 st.sidebar.markdown("## ⚛ ZHU MolEnergy"); st.sidebar.caption(PRODUCT_SUBTITLE); st.sidebar.markdown(f"<div class='paper-source'><b>Zhu et al.</b> <i>J. Phys. Chem. B</i> <b>2026</b>, <b>{ARTICLE_VOLUME}</b> ({ARTICLE_ISSUE}), {ARTICLE_PAGES}.<br><a href='{ARTICLE_URL}' target='_blank'>DOI: {ARTICLE_DOI}</a></div>",unsafe_allow_html=True)
@@ -189,7 +196,8 @@ elif page == "Molecular Explorer":
                 st.caption("Drag to rotate · wheel/pinch to zoom · double-click or use the camera reset control to auto-center and fit.")
                 one,two,three,four=st.columns(4); one.download_button("SDF",conformer_sdf(molecules[selected]),"conformer.sdf","chemical/x-mdl-sdfile"); two.download_button("XYZ",conformer_xyz(molecules[selected]),"conformer.xyz","chemical/x-xyz"); three.download_button("MOL",conformer_mol(molecules[selected]),"conformer.mol","chemical/x-mdl-molfile"); four.download_button("PNG view",conformer_png_bytes(molecules[selected]),"conformer_3d.png","image/png")
                 st.warning(infos[selected]["geometry_role"])
-        else: display.info("Choose reproducible embedding settings and generate one or more conformers.")
+        else:
+            with display: empty_state("Choose reproducible embedding settings and generate one or more conformers.")
     with tabs[2]:
         explicit=st.text_input("Optional existing xtb.exe path",key="xtb_path"); installation=detect_xtb(explicit or None)
         if installation.available: st.success(f"Verified xTB: {installation.executable} · {installation.version}")
@@ -258,7 +266,7 @@ elif page == "Model Training":
 elif page == "Data Quality":
     st.warning("Local-owner scientific audit. Record-level paths and internal review decisions are excluded from the public GitHub tree.")
     audit_path=QC_ROOT/"full_record_audit.csv"; summary_path=QC_ROOT/"qc_summary.json"
-    if not audit_path.is_file(): st.info("Run scripts/run_dft_qc.py with the project interpreter to build the read-only audit. No raw ORCA file is changed.")
+    if not audit_path.is_file(): empty_state("Run scripts/run_dft_qc.py with the project interpreter to build the read-only audit. No raw ORCA file is changed.")
     else:
         frame=pd.read_csv(audit_path); summary=json.loads(summary_path.read_text(encoding="utf-8")); columns=st.columns(4); columns[0].metric("Audited records",summary["records"]); columns[1].metric("Passed automated checks",summary["by_status"].get("passed_automated_checks",summary["by_status"].get("verified",0))); columns[2].metric("Needs human review",summary["by_status"].get("needs_review",0)); columns[3].metric("Invalid / unmatched",summary["by_status"].get("invalid_calculation",0)+summary["by_status"].get("unmatched",0))
         f1,f2,f3=st.columns(3); statuses=f1.multiselect("QC status",sorted(frame.qc_status.unique()),default=sorted(frame.qc_status.unique())); environments=f2.multiselect("Environment",sorted(frame.environment.unique()),default=sorted(frame.environment.unique())); search=f3.text_input("Record / molecule search")
@@ -273,7 +281,7 @@ elif page == "Data Quality":
 elif page == "Data Cleaning & Outlier Removal":
     st.warning("This module excludes records only from a reversible working copy. It never deletes source rows, edits ORCA files, or overwrites published models.")
     audit_path=QC_ROOT/"full_record_audit.csv"
-    if not audit_path.is_file(): st.info("Run scripts/run_dft_qc.py first to build the read-only audit.")
+    if not audit_path.is_file(): empty_state("Run scripts/run_dft_qc.py first to build the read-only audit.")
     else:
         with st.expander("Detection thresholds",expanded=False):
             a,b,c=st.columns(3); iqr=a.number_input("IQR multiplier",1.0,5.0,1.5,.1); z=b.number_input("Z-score threshold",2.0,8.0,3.0,.1); mad=c.number_input("Modified Z-score (MAD)",2.0,8.0,3.5,.1)

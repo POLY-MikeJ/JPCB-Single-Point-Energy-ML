@@ -43,7 +43,7 @@ The enhanced comparison uses 207 protocol-consistent molecules in every environm
 
 ## Windows installation and GUI
 
-For the existing validated installation, double-click `Launch_ZHU_MolEnergy.bat`; it invokes the project `.venv` directly and does not rely on `python` or `py` on PATH. To create a per-user desktop shortcut named **ZHU MolEnergy Workbench**, double-click `Install_ZHU_MolEnergy_Desktop_Shortcut.bat`. `Stop_ZHU_MolEnergy.bat` stops only the server PID recorded by this launcher. The previous JPCB-named batch files remain compatibility aliases.
+For the existing validated installation, double-click `Start_ZHU_MolEnergy.bat`; it validates and invokes the project `.venv` directly, performs an application-render preflight, chooses a free localhost port starting at 8501, opens the browser, and remains attached to the service without relying on `python` or `py` on PATH. To create a per-user desktop shortcut named **ZHU MolEnergy Workbench**, double-click `Install_ZHU_MolEnergy_Desktop_Shortcut.bat`. Pressing Ctrl+C or closing the shared launcher console stops the attached service; `Stop_ZHU_MolEnergy.bat` is the clean manual alternative and targets only the PID recorded by this launcher. `Launch_ZHU_MolEnergy.bat` and the previous JPCB-named batch files remain compatibility aliases.
 
 For a clean installation, install 64-bit Python 3.10-3.13, double-click `install_windows.bat`, then use the launcher. The server binds to `127.0.0.1`, disables usage telemetry, reuses a healthy launcher-owned instance, and chooses a free local port if 8501 is occupied.
 

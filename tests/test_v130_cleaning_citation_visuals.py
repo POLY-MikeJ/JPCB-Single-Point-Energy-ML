@@ -59,3 +59,15 @@ def test_cleaning_page_renders_without_exception():
         assert dict((metric.label,metric.value) for metric in app.metric)["Excluded"]=="0"
     finally:
         if created: audit.unlink()
+
+
+def test_windows_startup_preflight_and_male_mascot_asset():
+    from pathlib import Path
+    from PIL import Image
+    root=Path(__file__).parents[1]
+    start=(root/"Start_ZHU_MolEnergy.bat").read_text(encoding="utf-8")
+    launcher=(root/"scripts"/"launcher.py").read_text(encoding="utf-8")
+    assert ".venv\\Scripts\\python.exe" in start and "launcher.py" in start
+    assert "preflight_app.py" in launcher and "def free_port(" in launcher
+    with Image.open(root/"assets"/"zhu_molenergy_scientist.png") as image:
+        assert image.mode=="RGBA" and image.getextrema()[3][0]==0 and image.width>=1000 and image.height>=1000
