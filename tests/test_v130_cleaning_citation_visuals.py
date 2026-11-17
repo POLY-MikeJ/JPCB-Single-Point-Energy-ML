@@ -21,7 +21,7 @@ def test_complete_citation_and_export_metadata():
     assert "pages = {5819--5828}" in BIBTEX_CITATION
     metadata=prediction_metadata("model-x",{"target_definition":"ORCA FINAL SINGLE POINT ENERGY","target_unit":"Eh"})
     assert metadata["article_citation"]==ACS_CITATION and metadata["supporting_information_doi"].endswith("s001")
-    assert metadata["software_version"]=="1.3.0" and metadata["model_id"]=="model-x"
+    assert metadata["software_version"]=="1.4.0" and metadata["model_id"]=="model-x"
 
 
 def test_reversible_outlier_detection_and_bundle(tmp_path):

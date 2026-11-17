@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_branding_citation_and_metadata_are_consistent():
-    assert PRODUCT_NAME == "ZHU MolEnergy Workbench" and SOFTWARE_VERSION == "1.3.0"
+    assert PRODUCT_NAME == "ZHU MolEnergy Workbench" and SOFTWARE_VERSION == "1.4.0"
     assert ARTICLE_DOI == "10.1021/acs.jpcb.6c02936"
     assert 'title: "ZHU MolEnergy Workbench' in (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     assert "10.1021/acs.jpcb.6c02936" in (ROOT / "CITATION.bib").read_text(encoding="utf-8")

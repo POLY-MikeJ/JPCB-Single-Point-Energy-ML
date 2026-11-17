@@ -9,7 +9,7 @@ import pandas as pd
 
 PRODUCT_NAME = "ZHU MolEnergy Workbench"
 PRODUCT_SUBTITLE = "Molecular Energy Prediction, Visualization & Computational Chemistry"
-SOFTWARE_VERSION = "1.3.0"
+SOFTWARE_VERSION = "1.4.0"
 ARTICLE_TITLE = "High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning"
 ARTICLE_AUTHORS = "Jie Zhu, Jing Zhou, Zhaoyan Sun, Xiayun Huang, and Zhihong Nie"
 ARTICLE_JOURNAL = "The Journal of Physical Chemistry B"

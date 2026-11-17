@@ -2,7 +2,7 @@
 
 *Molecular Energy Prediction, Visualization & Computational Chemistry*
 
-Windows-ready local software for molecular-energy prediction, molecular visualization, geometry optimization, ORCA analysis, and traceable DFT quality control. Version 1.3.0 extends the workbench while preserving every v1.0.0/v1.1.0 model identifier and artifact.
+Windows-ready local software for molecular-energy prediction, molecular visualization, geometry optimization, ORCA analysis, and traceable DFT quality control. Version 1.4.0 adds complete xTB job records and a verified offline Windows installer while preserving every v1.0.0/v1.1.0 model identifier and artifact.
 
 > Jie Zhu, Jing Zhou, Zhaoyan Sun, Xiayun Huang, and Zhihong Nie. **High-Throughput Prediction of Single-Point Energies for Charged Polymer Monomers through Feature-Engineered Machine Learning.** *The Journal of Physical Chemistry B* **2026**, **130** (22), 5819–5828. [Article DOI](https://doi.org/10.1021/acs.jpcb.6c02936) · [Supporting Information DOI](https://doi.org/10.1021/acs.jpcb.6c02936.s001)
 
@@ -43,9 +43,15 @@ The enhanced comparison uses 207 protocol-consistent molecules in every environm
 
 ## Windows installation and GUI
 
+### v1.4.0 offline installer
+
+The release ZIP includes the official signed CPython 3.13.5 x64 installer, a complete cp313 Windows wheelhouse, and the checksum-verified official v1.0.0/v1.1.0 models. Extract the ZIP and double-click `Setup_ZHU_MolEnergy.bat`; no Anaconda, global PATH change, or network package installation is required. xTB remains optional and is not bundled.
+
 For the existing validated installation, double-click `Start_ZHU_MolEnergy.bat`; it validates and invokes the project `.venv` directly, performs an application-render preflight, chooses a free localhost port starting at 8501, opens the browser, and remains attached to the service without relying on `python` or `py` on PATH. To create a per-user desktop shortcut named **ZHU MolEnergy Workbench**, double-click `Install_ZHU_MolEnergy_Desktop_Shortcut.bat`. Pressing Ctrl+C or closing the shared launcher console stops the attached service; `Stop_ZHU_MolEnergy.bat` is the clean manual alternative and targets only the PID recorded by this launcher. `Launch_ZHU_MolEnergy.bat` and the previous JPCB-named batch files remain compatibility aliases.
 
 For a clean installation, install 64-bit Python 3.10-3.13, double-click `install_windows.bat`, then use the launcher. The server binds to `127.0.0.1`, disables usage telemetry, reuses a healthy launcher-owned instance, and chooses a free local port if 8501 is occupied.
+
+GFN2-xTB jobs preserve the exact input structures, complete raw log, native `xtbout.json`, charges, Wiberg bond orders, optimized structures, structured JSON/CSV, HTML summary, SHA-256 manifest, and a complete downloadable job ZIP. GFN2-xTB is a semiempirical tight-binding method and is reported separately from ORCA DFT and GPR predictions.
 
 The interface has nine workspaces: Predict, Batch Screening, Molecular Explorer, Solvent Comparison, ORCA Workbench, Model Training, local-owner Data Quality, reversible Data Cleaning & Outlier Removal, and About & Citation.
 

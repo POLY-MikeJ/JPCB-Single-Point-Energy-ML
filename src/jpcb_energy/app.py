@@ -1,4 +1,4 @@
-"""ZHU MolEnergy Workbench v1.3.0 local Streamlit application."""
+"""ZHU MolEnergy Workbench v1.4.0 local Streamlit application."""
 
 from __future__ import annotations
 
@@ -206,22 +206,31 @@ elif page == "Molecular Explorer":
         if st.button("Optimize with RDKit force field"):
             try: st.session_state["optimized_mol"],st.session_state["optimized_info"]=rdkit_optimize(smiles,int(seed_opt),field_opt); st.session_state["optimized_smiles"]=smiles.strip()
             except Exception as exc: st.error(str(exc))
-        charge=int(properties["formal_charge"]) if properties else 0; c1,c2,c3=st.columns(3); charge=c1.number_input("Formal charge",-10,10,charge); unpaired=c2.number_input("Unpaired electrons (--uhf)",0,10,0); solvent=c3.selectbox("xTB ALPB solvent",["none"]+sorted(SUPPORTED_ALPB)); confirm=st.checkbox("I have validated the charge and unpaired-electron count for this electronic state",value=unpaired==0)
+        charge=int(properties["formal_charge"]) if properties else 0; c1,c2,c3,c4=st.columns(4); charge=c1.number_input("Formal charge",-10,10,charge); unpaired=c2.number_input("Unpaired electrons (--uhf)",0,10,0); solvent=c3.selectbox("xTB ALPB solvent",["none"]+sorted(SUPPORTED_ALPB)); opt_level=c4.selectbox("Optimization level",["normal","tight","verytight","extreme"]); threads=st.slider("xTB threads",1,8,1); confirm=st.checkbox("I have validated the charge and unpaired-electron count for this electronic state",value=unpaired==0)
         disabled=not installation.available or not properties or not confirm
         if st.button("Optimize with GFN2-xTB",type="primary",disabled=disabled):
             try:
-                with st.spinner("Running isolated GFN2-xTB optimization…"): st.session_state["xtb_job"]=run_xtb(smiles,installation.executable or "",XTB_JOBS,int(charge),int(unpaired),None if solvent=="none" else solvent,seed=int(seed_opt)); st.session_state["xtb_smiles"]=smiles.strip()
+                with st.spinner("Running isolated GFN2-xTB optimization and preserving the complete record…"): st.session_state["xtb_job"]=run_xtb(smiles,installation.executable or "",XTB_JOBS,int(charge),int(unpaired),None if solvent=="none" else solvent,seed=int(seed_opt),opt_level=opt_level,threads=int(threads)); st.session_state["xtb_smiles"]=smiles.strip()
             except Exception as exc: st.error(f"GFN2-xTB optimization failed: {exc}")
         if "optimized_mol" in st.session_state and st.session_state.get("optimized_smiles")==smiles.strip():
             st.subheader("RDKit optimized geometry"); render_3d_html(st.session_state["optimized_mol"],style="ball-and-stick",color_scheme="CPK",background="light",show_hydrogens=True,labels="none",atom_scale=1.0,bond_width=5.0,auto_spin=False); st.json(st.session_state["optimized_info"])
         if "xtb_job" in st.session_state and st.session_state.get("xtb_smiles")==smiles.strip():
-            job=st.session_state["xtb_job"]; st.subheader("GFN2-xTB optimization result")
+            job=st.session_state["xtb_job"]; st.subheader("Complete xTB Results"); st.caption("GFN2-xTB semiempirical tight-binding result; this is not ORCA DFT and is not a GPR prediction.")
             if job.get("status")=="completed" and job.get("optimized_sdf"):
                 before=Chem.MolFromMolFile(str(Path(job["optimized_sdf"]).with_name("input.sdf")),removeHs=False); after=Chem.MolFromMolFile(job["optimized_sdf"],removeHs=False); before_column,after_column=st.columns(2)
                 with before_column: st.markdown("**RDKit input geometry**"); render_3d_html(before,style="ball-and-stick",color_scheme="CPK",background="light",show_hydrogens=True,labels="none",atom_scale=1.0,bond_width=5.0,auto_spin=False)
                 with after_column: st.markdown("**GFN2-xTB optimized geometry**"); render_3d_html(after,style="ball-and-stick",color_scheme="CPK",background="light",show_hydrogens=True,labels="none",atom_scale=1.0,bond_width=5.0,auto_spin=False)
-                e1,e2,e3=st.columns(3); e1.metric("Initial GFN2-xTB energy",f"{job['initial_energy_Eh']:.9f} Eh"); e2.metric("Final GFN2-xTB energy",f"{job['final_energy_Eh']:.9f} Eh"); e3.metric("Energy change",f"{job['energy_change_Eh']:.9f} Eh"); st.download_button("Download GFN2-xTB optimized XYZ",Path(job["optimized_xyz"]).read_text(encoding="utf-8",errors="replace"),"xtbopt.xyz","chemical/x-xyz")
-            with st.expander("GFN2-xTB job metadata"): st.json(job)
+                e1,e2,e3=st.columns(3); e1.metric("Initial energy",f"{job['initial_energy_Eh']:.9f} Eh"); e2.metric("Final energy",f"{job['final_energy_Eh']:.9f} Eh"); e3.metric("Energy change",f"{job['energy_change_Eh']:.9f} Eh")
+            st.write(f"**Status:** {job.get('status')} · **Converged:** {job.get('converged')} · **xTB:** {job.get('xtb_version')} · **Charge/UHF:** {job.get('charge')}/{job.get('unpaired_electrons')} · **Solvent:** {job.get('solvation_model')}")
+            electronic=pd.DataFrame([{"property":key,"value":job.get(key,"Not reported by this calculation")} for key in ["homo_energy_eV","lumo_energy_eV","homo_lumo_gap_eV","fermi_level_eV","dipole_x_D","dipole_y_D","dipole_z_D","dipole_total_D","total_charge_e","final_gradient_norm_Eh_per_bohr","optimization_cycles","final_scc_iterations"]]); st.dataframe(electronic,use_container_width=True,hide_index=True)
+            downloads=[("Complete job ZIP","job_zip","complete_xtb_job.zip","application/zip"),("Results JSON","results_json","xtb_results.json","application/json"),("Results CSV","results_csv","xtb_results.csv","text/csv"),("Raw log","raw_log","xtb.log","text/plain"),("HTML report","html_report","xtb_report.html","text/html"),("Optimized XYZ","optimized_xyz","xtbopt.xyz","chemical/x-xyz"),("Optimized SDF","optimized_sdf","optimized.sdf","chemical/x-mdl-sdfile"),("Optimized MOL","optimized_mol","optimized.mol","chemical/x-mdl-molfile")]
+            columns=st.columns(4)
+            for index,(label,key,name,mime) in enumerate(downloads):
+                path=Path(job[key]) if job.get(key) else None
+                if path and path.is_file(): columns[index%4].download_button(label,path.read_bytes(),name,mime,key=f"xtb_download_{key}")
+            with st.expander("All structured xTB parameters"): st.json({key:value for key,value in job.items() if key not in {"xtbout_json","wiberg_bond_orders","atomic_partial_charges_e"}})
+            with st.expander("Atomic charges and Wiberg bond orders"): st.json({"atomic_partial_charges_e":job.get("atomic_partial_charges_e"),"wiberg_bond_orders":job.get("wiberg_bond_orders")})
+            with st.expander("Raw xTB output log"): st.code(Path(job["raw_log"]).read_text(encoding="utf-8",errors="replace"),language="text")
         st.markdown('<div class="scientific-note coral-note">GFN2-xTB/ALPB optimization is separate from ORCA CPCM reference calculations and never changes GPR inputs, labels, or official models.</div>',unsafe_allow_html=True)
     with tabs[3]:
         if properties:
@@ -264,7 +273,7 @@ elif page == "Model Training":
             except Exception as exc: st.error(str(exc))
 
 elif page == "Data Quality":
-    st.warning("Local-owner scientific audit. Record-level paths and internal review decisions are excluded from the public GitHub tree.")
+    st.warning("Local scientific quality-control workspace. Record-level source paths and reviewer decisions remain private and are not included in public distributions.")
     audit_path=QC_ROOT/"full_record_audit.csv"; summary_path=QC_ROOT/"qc_summary.json"
     if not audit_path.is_file(): empty_state("Run scripts/run_dft_qc.py with the project interpreter to build the read-only audit. No raw ORCA file is changed.")
     else:
@@ -333,7 +342,7 @@ else:
     st.subheader("Research and model principle"); st.markdown("The published work uses chemically curated charged/polymerizable monomers, Mordred/RDKit molecular descriptors, feature selection, and Gaussian process regression to approximate ORCA-derived molecular electronic energies. The software preserves the released v1.0.0 reference model and v1.1.0 environment-specific bundles.")
     st.warning("Target-definition note: the paper introduction defines E_sp as final SCF electronic energy, whereas one Methods sentence mentions thermal corrections. Inspection of the released training table and ORCA labels shows that the distributed models predict ORCA FINAL SINGLE POINT ENERGY electronic energy. Existing labels were not silently changed.")
     st.subheader("Method boundaries"); st.markdown("- The JPCB paper is the scientific basis for the descriptor-engineered GPR prediction method and pretrained models.\n- RDKit conformers, interactive 3D visualization, GFN2-xTB optimization, workbench UI, and database-QC tooling are later software extensions, not original paper results.\n- xTB energy is never equated with the ORCA DFT target.\n- Absolute electronic energies should only be compared across chemically meaningful systems or a balanced reaction.")
-    st.caption(f"Software version {SOFTWARE_VERSION} · proposed repository POLY-MikeJ/ZHU-MolEnergy · local development build")
+    st.caption(f"Software version {SOFTWARE_VERSION} · GitHub POLY-MikeJ/JPCB-Single-Point-Energy-ML")
     st.subheader("Official model registry")
     for identifier,entry in model_registry().items():
         with st.expander(identifier,expanded=False): st.json(entry["metadata"])
