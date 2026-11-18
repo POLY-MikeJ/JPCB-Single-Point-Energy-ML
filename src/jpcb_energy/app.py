@@ -23,7 +23,7 @@ from jpcb_energy.registry import discover_models
 from jpcb_energy.user_training import train_user_model
 from jpcb_energy.visualization import DrawSettings, molecule_png_bytes, molecule_properties, molecule_svg
 from jpcb_energy.workbench import batch_predict, predict_with_bundle
-from jpcb_energy.xtb import SUPPORTED_ALPB, detect_xtb, rdkit_optimize, run_xtb
+from jpcb_energy.xtb import SUPPORTED_ALPB, detect_xtb, rdkit_optimize, run_xtb, save_xtb_path
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -199,9 +199,13 @@ elif page == "Molecular Explorer":
         else:
             with display: empty_state("Choose reproducible embedding settings and generate one or more conformers.")
     with tabs[2]:
-        explicit=st.text_input("Optional existing xtb.exe path",key="xtb_path"); installation=detect_xtb(explicit or None)
-        if installation.available: st.success(f"Verified xTB: {installation.executable} · {installation.version}")
-        else: st.warning(installation.message); st.caption("Install a native Windows xTB distribution separately, then enter its xtb.exe path. WSL and automatic Conda installation are not required or invoked.")
+        explicit=st.text_input("Optional existing xtb.exe path",key="xtb_path",help="The bundled runtime is detected first. A verified selection can be saved for future desktop launches."); installation=detect_xtb(explicit or None)
+        if installation.available: st.success(f"Verified xTB: {installation.executable} · {installation.version} · source: {installation.source}")
+        else: st.warning(installation.message); st.caption("The app checks its bundled runtime, your saved selection, PATH, and administrator-configured locations. WSL and Conda are not required.")
+        if explicit and st.button("Verify and save xTB path"):
+            saved_installation=save_xtb_path(explicit)
+            if saved_installation.available: st.success(f"Saved verified xTB path in the per-user application configuration: {saved_installation.version}"); st.rerun()
+            else: st.error(saved_installation.message)
         left,right=st.columns(2); seed_opt=left.number_input("Geometry seed",0,2147483647,42,1,key="opt_seed"); field_opt=right.selectbox("Fast local optimizer",["MMFF94","MMFF94s","UFF"])
         if st.button("Optimize with RDKit force field"):
             try: st.session_state["optimized_mol"],st.session_state["optimized_info"]=rdkit_optimize(smiles,int(seed_opt),field_opt); st.session_state["optimized_smiles"]=smiles.strip()
@@ -222,7 +226,7 @@ elif page == "Molecular Explorer":
                 with after_column: st.markdown("**GFN2-xTB optimized geometry**"); render_3d_html(after,style="ball-and-stick",color_scheme="CPK",background="light",show_hydrogens=True,labels="none",atom_scale=1.0,bond_width=5.0,auto_spin=False)
                 e1,e2,e3=st.columns(3); e1.metric("Initial energy",f"{job['initial_energy_Eh']:.9f} Eh"); e2.metric("Final energy",f"{job['final_energy_Eh']:.9f} Eh"); e3.metric("Energy change",f"{job['energy_change_Eh']:.9f} Eh")
             st.write(f"**Status:** {job.get('status')} · **Converged:** {job.get('converged')} · **xTB:** {job.get('xtb_version')} · **Charge/UHF:** {job.get('charge')}/{job.get('unpaired_electrons')} · **Solvent:** {job.get('solvation_model')}")
-            electronic=pd.DataFrame([{"property":key,"value":job.get(key,"Not reported by this calculation")} for key in ["homo_energy_eV","lumo_energy_eV","homo_lumo_gap_eV","fermi_level_eV","dipole_x_D","dipole_y_D","dipole_z_D","dipole_total_D","total_charge_e","final_gradient_norm_Eh_per_bohr","optimization_cycles","final_scc_iterations"]]); st.dataframe(electronic,use_container_width=True,hide_index=True)
+            electronic=pd.DataFrame([{"property":key,"value":"Not reported by this calculation" if job.get(key) is None else job[key]} for key in ["homo_energy_eV","lumo_energy_eV","homo_lumo_gap_eV","fermi_level_eV","dipole_x_D","dipole_y_D","dipole_z_D","dipole_total_D","total_charge_e","final_gradient_norm_Eh_per_bohr","optimization_cycles","final_scc_iterations"]]); st.dataframe(electronic,use_container_width=True,hide_index=True)
             downloads=[("Complete job ZIP","job_zip","complete_xtb_job.zip","application/zip"),("Results JSON","results_json","xtb_results.json","application/json"),("Results CSV","results_csv","xtb_results.csv","text/csv"),("Raw log","raw_log","xtb.log","text/plain"),("HTML report","html_report","xtb_report.html","text/html"),("Optimized XYZ","optimized_xyz","xtbopt.xyz","chemical/x-xyz"),("Optimized SDF","optimized_sdf","optimized.sdf","chemical/x-mdl-sdfile"),("Optimized MOL","optimized_mol","optimized.mol","chemical/x-mdl-molfile")]
             columns=st.columns(4)
             for index,(label,key,name,mime) in enumerate(downloads):

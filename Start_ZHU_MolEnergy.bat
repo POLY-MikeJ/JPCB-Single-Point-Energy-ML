@@ -3,6 +3,12 @@ setlocal
 title ZHU MolEnergy Workbench Launcher
 cd /d "%~dp0"
 set "ZHU_MOLENERGY_PYTHON=%~dp0.venv\Scripts\python.exe"
+set "ZHU_MOLENERGY_ROOT=%~dp0"
+if exist "%~dp0runtime\xtb\xtb.exe" (
+  set "XTB_EXE=%~dp0runtime\xtb\xtb.exe"
+  set "XTBPATH=%~dp0runtime\xtb\share\xtb"
+  set "PATH=%~dp0runtime\xtb;%PATH%"
+)
 if not exist "%ZHU_MOLENERGY_PYTHON%" (
   echo ERROR: Existing project virtual environment was not found:
   echo %ZHU_MOLENERGY_PYTHON%

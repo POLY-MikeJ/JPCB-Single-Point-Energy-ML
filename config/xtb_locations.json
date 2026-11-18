@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "known_locations": [
+    {
+      "label": "Legacy project-local xTB 6.7.1pre development installation",
+      "path": "local_tools/xtb-6.7.1pre/xtb-6.7.1/bin/xtb.exe"
+    }
+  ],
+  "note": "Administrators may add machine-specific entries to xtb_locations.local.json. Private absolute paths must not be committed."
+}

@@ -34,12 +34,14 @@ def test_all_official_model_hashes_load_and_match_metadata():
         metadata=entry["metadata"]; expected=metadata.get("model_sha256")
         if expected: assert hashlib.sha256(Path(entry["path"]).read_bytes()).hexdigest()==expected
 
-def test_offline_installer_contract_and_no_xtb_binary_in_source():
+def test_offline_installer_contract_and_xtb_binary_is_staged_not_tracked():
     batch=(ROOT/"Setup_ZHU_MolEnergy.bat").read_text(encoding="utf-8")
     setup=(ROOT/"scripts"/"setup_windows.py").read_text(encoding="utf-8")
     assert "python-3.13.5-amd64.exe" in batch and "certutil" in batch and "InstallAllUsers=0" in batch
     assert "--no-index" in setup and "discover_models" in setup and "smoke_prediction_Eh" in setup
-    assert not list(ROOT.glob("**/xtb.exe")) or all("local_tools" in str(p) for p in ROOT.glob("**/xtb.exe"))
+    assert not (ROOT/"runtime"/"xtb"/"xtb.exe").exists()
+    stager=(ROOT/"scripts"/"stage_xtb_runtime.py").read_text(encoding="utf-8")
+    assert "EXPECTED_ARCHIVE_SHA256" in stager and "COPYING.LESSER" in stager
 
 def test_actual_job_zip_reopens_when_validation_artifact_available():
     jobs=ROOT/"local_jobs"/"xtb_v140_validation"

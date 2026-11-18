@@ -16,24 +16,101 @@ OPT_LEVELS={"crude","sloppy","loose","normal","tight","verytight","extreme"}; FL
 
 @dataclass(frozen=True)
 class XTBInstallation:
-    available: bool; executable: str|None; version: str|None; message: str
+    available: bool; executable: str|None; version: str|None; message: str; source: str|None=None
 
 def _num(v): return float(v.replace("D","E").replace("d","e")) if v is not None else None
 def _last(pattern,text):
     values=re.findall(pattern,text,re.I|re.M); return _num(values[-1]) if values else None
 
-def detect_xtb(explicit_path: str|Path|None=None)->XTBInstallation:
-    candidate=Path(explicit_path).expanduser() if explicit_path else None
-    roots=[Path(__file__).resolve().parents[2]/"local_tools",Path.cwd()/"local_tools"]
-    portable=next((p for root in roots if root.is_dir() for p in root.rglob("xtb.exe")),None)
-    resolved=str(candidate.resolve()) if candidate and candidate.is_file() else shutil.which("xtb") or shutil.which("xtb.exe") or (str(portable.resolve()) if portable else None)
-    if not resolved: return XTBInstallation(False,None,None,"xTB was not found. Configure a native Windows xtb.exe; core features remain available.")
+def software_root()->Path:
+    configured=os.environ.get("ZHU_MOLENERGY_ROOT")
+    if configured: return Path(configured).expanduser().resolve()
+    cwd=Path.cwd().resolve()
+    if (cwd/"runtime").is_dir() or (cwd/"Start_ZHU_MolEnergy.bat").is_file(): return cwd
+    return Path(__file__).resolve().parents[2]
+
+def user_config_path()->Path:
+    override=os.environ.get("ZHU_MOLENERGY_CONFIG")
+    if override: return Path(override).expanduser().resolve()
+    base=Path(os.environ.get("LOCALAPPDATA") or Path.home()/"AppData"/"Local")
+    return base/"ZHU MolEnergy Workbench"/"config.json"
+
+def load_saved_xtb_path()->str|None:
     try:
-        run=subprocess.run([resolved,"--version"],capture_output=True,text=True,encoding="utf-8",errors="replace",timeout=15,shell=False,check=False); output=(run.stdout+"\n"+run.stderr).strip()
-        if run.returncode: return XTBInstallation(False,resolved,None,f"xTB version check failed ({run.returncode}): {output[-300:]}")
+        value=json.loads(user_config_path().read_text(encoding="utf-8")).get("xtb_executable")
+        return str(value).strip() if value else None
+    except (OSError,json.JSONDecodeError,AttributeError): return None
+
+def xtb_environment(executable: str|Path,base: dict|None=None)->dict:
+    """Return an xTB-ready child environment without changing the parent process."""
+    executable=Path(executable).resolve(); env=dict(base or os.environ)
+    env["PATH"]=str(executable.parent)+os.pathsep+env.get("PATH","")
+    share_candidates=(executable.parent/"share"/"xtb",executable.parent.parent/"share"/"xtb")
+    share=next((path for path in share_candidates if path.is_dir()),None)
+    if share: env["XTBPATH"]=str(share.resolve())
+    env["XTB_EXE"]=str(executable)
+    return env
+
+def _configured_locations(root: Path):
+    files=(root/"config"/"xtb_locations.json",root/"config"/"xtb_locations.local.json")
+    for config in files:
+        try: entries=json.loads(config.read_text(encoding="utf-8")).get("known_locations",[])
+        except (OSError,json.JSONDecodeError,AttributeError): continue
+        for entry in entries:
+            raw=entry.get("path") if isinstance(entry,dict) else entry
+            if not raw: continue
+            expanded=os.path.expandvars(str(raw)); path=Path(expanded).expanduser()
+            if not path.is_absolute(): path=root/path
+            if any(mark in str(path) for mark in "*?["):
+                yield from sorted(path.parent.glob(path.name))
+            else: yield path
+
+def _verify_xtb(path: str|Path,source: str)->XTBInstallation:
+    candidate=Path(path).expanduser()
+    if not candidate.is_file(): return XTBInstallation(False,str(candidate),None,f"Configured xTB path does not exist: {candidate}",source)
+    try:
+        resolved=str(candidate.resolve())
+        run=subprocess.run([resolved,"--version"],capture_output=True,text=True,encoding="utf-8",errors="replace",timeout=15,shell=False,check=False,env=xtb_environment(resolved)); output=(run.stdout+"\n"+run.stderr).strip()
+        if run.returncode: return XTBInstallation(False,resolved,None,f"xTB version check failed ({run.returncode}): {output[-300:]}",source)
+        if "xtb version" not in output.lower(): return XTBInstallation(False,resolved,None,"Executable did not report an xTB version.",source)
         version=next((line.strip() for line in output.splitlines() if "xtb version" in line.lower()),"version not reported")
-        return XTBInstallation(True,resolved,version,"Verified local xTB executable")
-    except (OSError,subprocess.TimeoutExpired) as exc: return XTBInstallation(False,resolved,None,f"xTB verification failed: {exc}")
+        return XTBInstallation(True,resolved,version,f"Verified local xTB executable ({source})",source)
+    except (OSError,subprocess.TimeoutExpired) as exc: return XTBInstallation(False,str(candidate),None,f"xTB verification failed: {exc}",source)
+
+def save_xtb_path(path: str|Path)->XTBInstallation:
+    installation=_verify_xtb(path,"user-saved path")
+    if not installation.available: return installation
+    config=user_config_path(); config.parent.mkdir(parents=True,exist_ok=True)
+    payload={"schema_version":1,"xtb_executable":installation.executable,"verified_version":installation.version,"saved_at_utc":datetime.now(timezone.utc).isoformat()}
+    config.write_text(json.dumps(payload,indent=2),encoding="utf-8")
+    return installation
+
+def detect_xtb(explicit_path: str|Path|None=None)->XTBInstallation:
+    """Discover xTB in deterministic order and verify every candidate by execution."""
+    root=software_root(); candidates=[]
+    # 1. Installer-owned runtime always wins and makes desktop launches self-contained.
+    candidates.append((root/"runtime"/"xtb"/"xtb.exe","bundled runtime"))
+    # 2. An explicit UI value, the persisted user choice, then the documented env override.
+    if explicit_path: candidates.append((Path(explicit_path).expanduser(),"user-selected path"))
+    saved=load_saved_xtb_path()
+    if saved: candidates.append((Path(saved).expanduser(),"user-saved path"))
+    if os.environ.get("XTB_EXE"): candidates.append((Path(os.environ["XTB_EXE"]).expanduser(),"XTB_EXE environment"))
+    # 3. System/user PATH.
+    on_path=shutil.which("xtb.exe") or shutil.which("xtb")
+    if on_path: candidates.append((Path(on_path),"system PATH"))
+    # 4. Site-specific locations are data, never private paths embedded in source.
+    candidates.extend((path,"configured known location") for path in _configured_locations(root))
+    seen=set(); failures=[]
+    for path,source in candidates:
+        key=os.path.normcase(str(path.resolve(strict=False)))
+        if key in seen: continue
+        seen.add(key)
+        if not path.is_file(): continue
+        installation=_verify_xtb(path,source)
+        if installation.available: return installation
+        failures.append(installation.message)
+    detail=f" Last verification error: {failures[-1]}" if failures else ""
+    return XTBInstallation(False,None,None,"xTB was not found or could not be executed. Bundled runtime, saved path, PATH, and configured locations were checked."+detail,None)
 
 def build_xtb_command(executable,input_name,charge,unpaired_electrons,solvent=None,opt_level="tight",complete_output=False):
     if Path(input_name).name!=input_name or not input_name.lower().endswith(".xyz"): raise ValueError("xTB input must be a simple local .xyz filename")
@@ -134,7 +211,8 @@ def run_xtb(smiles,executable,jobs_root,charge,unpaired_electrons,solvent=None,t
     command=build_xtb_command(installation.executable or executable,"input.xyz",charge,unpaired_electrons,solvent,opt_level,complete_output=True); canonical=Chem.MolToSmiles(Chem.RemoveHs(molecule),canonical=True,isomericSmiles=True); elements=Counter(a.GetSymbol() for a in molecule.GetAtoms()); start=datetime.now(timezone.utc); timer=time.perf_counter()
     metadata={"job_id":job_id,"status":"running","canonical_smiles":canonical,"molecular_formula":rdMolDescriptors.CalcMolFormula(Chem.RemoveHs(molecule)),"atom_count_including_hydrogen":molecule.GetNumAtoms(),"element_composition":dict(sorted(elements.items())),"formal_charge_from_smiles":Chem.GetFormalCharge(Chem.RemoveHs(molecule)),"charge":int(charge),"unpaired_electrons":int(unpaired_electrons),"spin_multiplicity":int(unpaired_electrons)+1,"method":"GFN2-xTB","optimization_level":opt_level,"solvation_model":f"ALPB({solvent})" if solvent else "gas phase","command":command,"executable":installation.executable,"xtb_version":installation.version,"input_geometry_provenance":info[0],"random_seed":seed,"threads":threads,"environment":{"OMP_NUM_THREADS":str(threads),"MKL_NUM_THREADS":str(threads)},"timeout_seconds":timeout_seconds,"start_time_utc":start.isoformat(),"job_directory":str(directory)}; (directory/"job.json").write_text(json.dumps(metadata,indent=2),encoding="utf-8")
     try:
-        done=subprocess.run(command,cwd=directory,capture_output=True,text=True,encoding="utf-8",errors="replace",timeout=timeout_seconds,shell=False,check=False,env={**os.environ,"OMP_NUM_THREADS":str(threads),"MKL_NUM_THREADS":str(threads)}); log=done.stdout+("\n[stderr]\n"+done.stderr if done.stderr else ""); (directory/"xtb.log").write_text(log,encoding="utf-8"); result=parse_xtb_output(log,directory)
+        environment=xtb_environment(installation.executable or executable); environment.update({"OMP_NUM_THREADS":str(threads),"MKL_NUM_THREADS":str(threads)})
+        done=subprocess.run(command,cwd=directory,capture_output=True,text=True,encoding="utf-8",errors="replace",timeout=timeout_seconds,shell=False,check=False,env=environment); log=done.stdout+("\n[stderr]\n"+done.stderr if done.stderr else ""); (directory/"xtb.log").write_text(log,encoding="utf-8"); result=parse_xtb_output(log,directory)
         if result["optimized_xyz"]:
             optimized=molecule_from_xyz(molecule,result["optimized_xyz"]); (directory/"optimized.sdf").write_text(conformer_sdf(optimized,"GFN2-xTB optimized geometry"),encoding="utf-8"); (directory/"optimized.mol").write_text(conformer_mol(optimized,"GFN2-xTB optimized geometry"),encoding="utf-8"); result.update({"optimized_sdf":str(directory/"optimized.sdf"),"optimized_mol":str(directory/"optimized.mol")})
         metadata.update({"status":"completed" if done.returncode==0 and result["converged"] else "failed","exit_code":done.returncode})

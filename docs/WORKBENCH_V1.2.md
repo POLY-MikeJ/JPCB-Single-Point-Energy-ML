@@ -10,7 +10,7 @@
 
 ## GFN2-xTB adapter
 
-xTB is detected from an explicit executable path or PATH and verified with `--version`. It is not bundled. Jobs run in unique directories beneath `local_jobs/xtb`, with charge and number of unpaired electrons recorded separately. Optional ALPB solvents are restricted to the adapter's supported list. GFN2-xTB energy and geometry are never labeled as DFT or substituted for the ORCA-trained target.
+xTB is discovered from the bundled installer runtime, a saved user selection, PATH, or administrator configuration, and every candidate is verified with `--version`. Jobs run in unique directories beneath `local_jobs/xtb`, with charge and number of unpaired electrons recorded separately. Optional ALPB solvents are restricted to the adapter's supported list. GFN2-xTB energy and geometry are never labeled as DFT or substituted for the ORCA-trained target.
 
 ## Scientific QC governance
 

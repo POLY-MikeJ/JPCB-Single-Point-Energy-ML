@@ -24,6 +24,19 @@ LOG = STATE_DIR / "zhu_molenergy_streamlit.log"
 PREFLIGHT = ROOT / "scripts" / "preflight_app.py"
 
 
+def configure_bundled_xtb() -> dict:
+    """Expose only the installer-owned xTB runtime to launcher children."""
+    executable=ROOT/"runtime"/"xtb"/"xtb.exe"; share=ROOT/"runtime"/"xtb"/"share"/"xtb"
+    result={"available":False,"executable":str(executable)}
+    os.environ["ZHU_MOLENERGY_ROOT"]=str(ROOT)
+    if executable.is_file():
+        os.environ["XTB_EXE"]=str(executable)
+        os.environ["PATH"]=str(executable.parent)+os.pathsep+os.environ.get("PATH","")
+        if share.is_dir(): os.environ["XTBPATH"]=str(share)
+        result.update({"available":True,"xtbpath":os.environ.get("XTBPATH")})
+    return result
+
+
 def health(port: int, timeout: float = 0.8) -> bool:
     try:
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/_stcore/health", timeout=timeout) as response:
@@ -107,6 +120,7 @@ def supervise(process: subprocess.Popen, port: int) -> int:
 
 
 def start(foreground: bool = False) -> int:
+    xtb_runtime=configure_bundled_xtb()
     if not PYTHON.is_file():
         print(f"ERROR: Project interpreter not found: {PYTHON}"); return 2
     if not APP.is_file():
@@ -132,7 +146,7 @@ def start(foreground: bool = False) -> int:
     LOG.write_text(f"ZHU MolEnergy Workbench startup log\nStarted: {time.strftime('%Y-%m-%dT%H:%M:%S%z')}\nPreflight: passed\nCommand: {' '.join(command)}\n\n",encoding="utf-8")
     with LOG.open("a",encoding="utf-8") as log:
         process=subprocess.Popen(command,cwd=ROOT,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,creationflags=creationflags,shell=False,close_fds=True)
-    state={"pid":process.pid,"bootstrap_pid":process.pid,"port":port,"url":url,"project_root":str(ROOT),"python":str(PYTHON),"command":command,"foreground":foreground,"status":"starting","started_at":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"log":str(LOG)}; STATE.write_text(json.dumps(state,indent=2),encoding="utf-8")
+    state={"pid":process.pid,"bootstrap_pid":process.pid,"port":port,"url":url,"project_root":str(ROOT),"python":str(PYTHON),"command":command,"foreground":foreground,"status":"starting","started_at":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"log":str(LOG),"xtb_runtime":xtb_runtime}; STATE.write_text(json.dumps(state,indent=2),encoding="utf-8")
     print(f"Starting ZHU MolEnergy Workbench at {url}")
     for _ in range(90):
         if health(port):
@@ -162,7 +176,7 @@ def stop() -> int:
 
 
 def diagnose() -> int:
-    print(json.dumps({"project_root":str(ROOT),"python":str(PYTHON),"python_exists":PYTHON.is_file(),"app":str(APP),"app_exists":APP.is_file(),"state":load_state()},indent=2)); return 0
+    print(json.dumps({"project_root":str(ROOT),"python":str(PYTHON),"python_exists":PYTHON.is_file(),"app":str(APP),"app_exists":APP.is_file(),"bundled_xtb":configure_bundled_xtb(),"state":load_state()},indent=2)); return 0
 
 
 if __name__ == "__main__":

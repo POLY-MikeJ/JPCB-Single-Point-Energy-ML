@@ -20,8 +20,11 @@ def main():
         run([str(python),"-m","pip","install","--no-index","--find-links",str(WHEELS),"setuptools==80.9.0","wheel==0.45.1"])
         run([str(python),"-m","pip","install","--no-index","--find-links",str(WHEELS),"-r",str(ROOT/"requirements-windows-lock.txt")])
         run([str(python),"-m","pip","install","--no-index","--find-links",str(WHEELS),"--no-build-isolation",str(ROOT)])
-        smoke="from jpcb_energy.registry import discover_models; from jpcb_energy.workbench import predict_with_bundle; from pathlib import Path; m=discover_models(Path.cwd()); r=predict_with_bundle('C=CC(=O)N',m['v1.0.0-vacuum-reference']); print(len(m),r['prediction'])"
-        done=subprocess.run([str(python),"-c",smoke],cwd=ROOT,text=True,capture_output=True,check=True); report.update({"official_models_loaded":int(done.stdout.split()[0]),"smoke_prediction_Eh":float(done.stdout.split()[1])})
+        smoke="import json; from jpcb_energy.registry import discover_models; from jpcb_energy.workbench import predict_with_bundle; from jpcb_energy.xtb import detect_xtb; from pathlib import Path; m=discover_models(Path.cwd()); r=predict_with_bundle('C=CC(=O)N',m['v1.0.0-vacuum-reference']); x=detect_xtb(); print(json.dumps({'models':len(m),'prediction':r['prediction'],'available':x.available,'source':x.source,'version':x.version}))"
+        environment={**os.environ,"ZHU_MOLENERGY_ROOT":str(ROOT)}
+        done=subprocess.run([str(python),"-c",smoke],cwd=ROOT,text=True,capture_output=True,check=True,env=environment); smoke_result=json.loads(done.stdout)
+        report.update({"official_models_loaded":smoke_result["models"],"smoke_prediction_Eh":smoke_result["prediction"],"bundled_xtb_available":smoke_result["available"],"bundled_xtb_source":smoke_result["source"],"bundled_xtb_version":smoke_result["version"]})
+        if not report["bundled_xtb_available"] or report["bundled_xtb_source"]!="bundled runtime": raise RuntimeError("Bundled xTB runtime was not discovered and verified")
         subprocess.run(["powershell.exe","-NoProfile","-ExecutionPolicy","Bypass","-File",str(ROOT/"Install_ZHU_MolEnergy_Desktop_Shortcut.ps1")],cwd=ROOT,check=True)
         report.update({"status":"passed","venv_python":str(python),"duration_seconds":time.time()-started,"wheel_count":len(list(WHEELS.glob('*.whl')))})
     except Exception as exc: report.update({"status":"failed","error":str(exc),"duration_seconds":time.time()-started}); REPORT.write_text(json.dumps(report,indent=2),encoding="utf-8"); note(f"ERROR: {exc}"); return 1
